@@ -1,0 +1,93 @@
+{
+  "theme_type": "light",
+  "typography": {
+    "fonts_to_import": "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&family=Manrope:wght@400;500;600&display=swap",
+    "headings": {
+      "family": "font-serif ('Cormorant Garamond', serif)",
+      "weights": ["400", "500", "600"],
+      "usage": "H1, H2, Certificate Titles, Main Marketing copy",
+      "styling": "tracking-tight leading-none text-foreground"
+    },
+    "body": {
+      "family": "font-sans ('Manrope', sans-serif)",
+      "weights": ["400", "500", "600"],
+      "usage": "Paragraphs, Buttons, Labels, UI Elements, Chat Bubbles",
+      "styling": "tracking-normal leading-relaxed text-foreground"
+    },
+    "mono": {
+      "family": "font-mono ('IBM Plex Mono', monospace)",
+      "weights": ["400", "500"],
+      "usage": "SHA-256 Hashes, Timestamps, Block Numbers, Verification details",
+      "styling": "tracking-wider text-xs or text-sm uppercase text-muted"
+    }
+  },
+  "colors": {
+    "background": "#F8F7F4",
+    "foreground": "#161616",
+    "surface": "#FFFFFF",
+    "surface_secondary": "#EAE8E3",
+    "border": "#D5D2CA",
+    "accent_primary": "#1F5940",
+    "accent_hover": "#174230",
+    "muted_text": "#6B6A65",
+    "error": "#8B2626"
+  },
+  "visual_enhancers": {
+    "shadows": "Minimalist. Avoid muddy shadows. Use subtle shadow-sm for cards or crisp 1px borders (border-black/10).",
+    "borders": "Use border-[#D5D2CA] to create crisp 'document-like' grid lines. Square edges or small rounded-md (4px). No fully rounded pills.",
+    "textures": "Apply subtle SVG noise over the landing page background to reduce digital flatness."
+  },
+  "components": {
+    "Certificate": "The star component. Must look like a physical notary document. Pure white background, thin graphite borders, Cormorant Garamond for titles, IBM Plex Mono for hashes. Include a large prominent SVG seal in Seal Green (#1F5940). Add 'Verificado' typography in serif.",
+    "Chat_Thread": "Private chat should feel secure and restricted. Use standard rectangular bubbles with 4px border-radius. Graphite background with Bone White text for 'me', and Surface Secondary background with Graphite text for 'them'. Include timestamp in mono font.",
+    "Status_Badge": "Pendiente: monochrome outline with gray text. Confirmado: solid Seal Green background with bone white text.",
+    "Dropzone": "Dashed graphite border (border-dashed border-[#D5D2CA] bg-[#F8F7F4]). When hovering to upload/verify, border changes to Seal Green.",
+    "Verification_Result": "Success: Giant Seal Green checkmark and Seal Green borders. Error: Red (#8B2626) cross and text 'Hash no coincide'."
+  },
+  "grids_and_spacing": {
+    "system": "Use extremely generous spacing to emphasize premium feel. Use p-8 or p-12 for main cards. gap-8 to gap-12 between sections.",
+    "bento_grid": "For the dashboard, use strict CSS grid. Main agreements list spans more columns, stats/profile spans fewer columns."
+  },
+  "layouts": {
+    "landing": "Mobile-first flex column. Desktop: Asymmetrical 2-column layout. Huge left-aligned typography. Right side: 3D or tilt-effect visual of a verified certificate.",
+    "certificate_page": "Centered narrow container (max-w-3xl) to mimic a physical A4 paper aspect ratio, floating above the background.",
+    "agreement_view": "Desktop: Split screen. Left side: The document/text content (max-w-2xl). Right side: The private chat thread (sticky, side panel)."
+  },
+  "motion_and_interactions": {
+    "seal_animation": "When an agreement goes to 'Confirmado', animate the green seal: scale down from 2x and stamp onto the document with a subtle framer-motion spring/bounce.",
+    "hash_calculation": "While calculating SHA-256 in browser, scramble random alphanumeric characters in mono font rapidly for 0.5s before showing the final hash.",
+    "transitions": "Buttons scale down to 0.98 on click. Hover states on buttons shift background slightly darker."
+  },
+  "accessibility": {
+    "contrast": "Graphite on Bone White easily passes APCA. Seal Green on Bone White also passes.",
+    "focus": "Use ring-2 ring-[#1F5940] ring-offset-2 ring-offset-[#F8F7F4] for focus states.",
+    "test_ids": "Every CTA, input, form, and hash display MUST have a data-testid attribute."
+  },
+  "image_urls": {
+    "landing_hero": {
+      "url": "https://images.unsplash.com/photo-1641477176034-1a3e10c343a8?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NTJ8MHwxfHNlYXJjaHwxfHx3YXglMjBzZWFsJTIwZG9jdW1lbnR8ZW58MHx8fHwxNzgzNTU0MTkyfDA&ixlib=rb-4.1.0&q=85",
+      "description": "Wax stamp on document for abstract premium feel on landing",
+      "category": "hero_abstract"
+    },
+    "trust_section": {
+      "url": "https://images.unsplash.com/photo-1758518730384-be3d205838e8?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzV8MHwxfHNlYXJjaHwyfHxtb25vY2hyb21lJTIwYnVzaW5lc3MlMjBoYW5kc2hha2V8ZW58MHx8fHwxNzgzNTU0MTkyfDA&ixlib=rb-4.1.0&q=85",
+      "description": "Monochrome business handshake",
+      "category": "about_trust"
+    }
+  },
+  "icons_strategy": "lucide-react. Use 1.5px stroke width (strokeWidth={1.5}) for a premium, delicate, precise look. Do not use solid/filled icons except for the green checkmark.",
+  "universal_guidelines_for_main_agent": [
+    "Do not center align app container globally.",
+    "Mobile-first implies standard stacking (flex-col) defaulting to md:flex-row or grid where necessary.",
+    "STRICTLY adhere to the monochromatic palette with the ONE accent color (Seal Green / #1F5940). Avoid default Vercel/Stripe styles. NO neon, NO generic blue.",
+    "CRITICAL: Use the custom typography. Import Cormorant Garamond, Manrope, and IBM Plex Mono in the global CSS or root.",
+    "For the crypto hashing, implement crypto.subtle.digest('SHA-256', ...) securely in the frontend. Do NOT send unhashed files to the server.",
+    "To display pending status, make sure it says 'Pendiente de confirmación' without any Bitcoin block numbers yet.",
+    "For verified status, clearly say 'Confirmado en bloque Bitcoin #N'.",
+    "Use sonner for toast notifications.",
+    "Ensure the UI is in Spanish as requested.",
+    "Ensure 'data-testid' is added to all interactive components to allow UI testing.",
+    "Avoid fully transparent headers with no backdrop-blur if content scrolls underneath.",
+    "The Certificate layout should visually prioritize the generated Hash and the 'Seal Green' stamp to look official."
+  ]
+}
