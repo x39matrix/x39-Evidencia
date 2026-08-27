@@ -461,6 +461,7 @@ class E2EKeyModel(BaseModel):
 class E2EPQKeyModel(BaseModel):
     xwing_pub_b64: Optional[str] = None
     xwing_ct_b64: Optional[str] = None
+    xwing_pub_sig_b64: Optional[str] = None   # firma Ed25519 (sig.js) de A sobre x39xwing:v2:<aid>:<xwing_pub_b64>
 
 
 def _role(a: dict, email: str) -> str:
@@ -570,6 +571,10 @@ async def publish_e2e_pq_key(aid: str, data: E2EPQKeyModel, email: str = Depends
         if _b64_len(data.xwing_pub_b64) != XWING_PK_LEN:
             raise HTTPException(400, f"xwing_pub_b64 invalida ({XWING_PK_LEN} bytes X-Wing)")
         entry["xwing_pub_b64"] = data.xwing_pub_b64
+        if data.xwing_pub_sig_b64 is not None:
+            if _b64_len(data.xwing_pub_sig_b64) != 64:
+                raise HTTPException(400, "xwing_pub_sig_b64 invalida (64 bytes Ed25519)")
+            entry["xwing_pub_sig_b64"] = data.xwing_pub_sig_b64
     if data.xwing_ct_b64 is not None:
         if role != "B":
             raise HTTPException(400, "Solo el rol B publica la encapsulacion X-Wing")
@@ -592,9 +597,10 @@ async def get_e2e_pq_keys(aid: str, email: str = Depends(current_user)):
         raise HTTPException(403, "Acceso restringido")
     keys = a.get("e2e_pq", {})
     pub_a = (keys.get("A") or {}).get("xwing_pub_b64")
+    sig_a = (keys.get("A") or {}).get("xwing_pub_sig_b64")
     ct_b = (keys.get("B") or {}).get("xwing_ct_b64")
     return {"suite": keys.get("suite"),
-            "A": {"xwing_pub_b64": pub_a} if pub_a else None,
+            "A": {"xwing_pub_b64": pub_a, "xwing_pub_sig_b64": sig_a} if pub_a else None,
             "B": {"xwing_ct_b64": ct_b} if ct_b else None}
 
 
