@@ -136,6 +136,7 @@ export default function Acuerdo() {
     setup();
     const timer = setInterval(setup, 4000);
     return () => { stop = true; clearInterval(timer); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.email, ag?.my_role, id, sealed, sharedKey]);
 
   // Descifra los mensajes para mostrarlos (los antiguos en claro se muestran tal cual).
