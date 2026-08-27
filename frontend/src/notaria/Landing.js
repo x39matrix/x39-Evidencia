@@ -34,6 +34,9 @@ export default function Landing() {
     <div data-testid="landing-page">
       <Nav />
       <main className="nt-wrap">
+        <div className="nt-card" role="status" data-testid="beta-banner" style={{ marginBottom: 18, padding: '10px 14px', borderLeft: '3px solid var(--seal)', fontSize: 13, lineHeight: 1.5 }}>
+          {t('landing.betaBanner')}
+        </div>
         <section className="nt-hero">
           <div>
             <div className="nt-label" style={{ marginBottom: 14 }}>{t('landing.tag')}</div>
