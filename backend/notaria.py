@@ -507,6 +507,17 @@ async def post_message(aid: str, data: MessageModel, request: Request, email: st
             raise HTTPException(400, "Firma v3 requiere cts valido")
         if _b64_len(sig_b64) != 64:
             raise HTTPException(400, "sig_b64 invalida (64 bytes Ed25519)")
+        # v3.1: verificar la firma del autor contra su clave publicada (sig_keys[rol]). Sin clave o invalida -> 400.
+        pk_b64 = (a.get("sig_keys") or {}).get(_role(a, email))
+        if not pk_b64:
+            raise HTTPException(400, "Publica tu clave de firma (sig_key) antes de enviar mensajes firmados")
+        try:
+            from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+            content_hash = hashlib.sha256((ct + iv).encode()).hexdigest()
+            Ed25519PublicKey.from_public_bytes(base64.b64decode(pk_b64)).verify(
+                base64.b64decode(sig_b64), f"x39msg:v3:{aid}:{content_hash}:{cts}".encode())
+        except Exception:
+            raise HTTPException(400, "Firma Ed25519 del mensaje invalida")
     if nmsg.count_documents({"agreement_id": aid}) >= 500:
         raise HTTPException(409, "Limite de 500 mensajes por acuerdo alcanzado")
     msg = {"agreement_id": aid, "sender": email, "ct": ct, "iv": iv, "ts": _now()}
