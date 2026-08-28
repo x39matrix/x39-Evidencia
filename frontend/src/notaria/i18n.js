@@ -4,7 +4,7 @@ const STRINGS = {
   es: {
     'nav.verify': 'Verificar',
     'nav.panel': 'Panel',
-    'nav.login': 'Entrar con Google',
+    'nav.login': 'Entrar',
     'common.loading': 'Cargando…',
     'common.verifyingIdentity': 'Verificando identidad…',
     'common.backToPanel': 'Volver al panel',
@@ -12,6 +12,7 @@ const STRINGS = {
 
     'landing.tag': 'Anclado en Bitcoin · Firma ML-DSA-87 · Verificable por cualquiera',
     'landing.betaBanner': 'Beta cerrada. X-39 Acuerdos está en fase de integración: la creación de acuerdos no está abierta al público todavía. Las pruebas ya emitidas se verifican con herramientas independientes. No sustituye a la notaría pública ni a una firma electrónica cualificada.',
+    'ag.pqAuthFail': 'La clave de cifrado de la otra parte no está firmada o su firma no es válida. Por seguridad, el chat queda bloqueado hasta resolverlo.',
     'landing.h1': 'Acuerdos verificables, anclados en Bitcoin.',
     'landing.h1b': 'Cada prueba lleva una firma ML-DSA-87 (FIPS 204) del operador y se verifica con herramientas independientes, sin depender de nosotros.',
     'landing.chipPq': 'ML-DSA-87 · FIPS-204',
@@ -239,7 +240,7 @@ const STRINGS = {
   en: {
     'nav.verify': 'Verify',
     'nav.panel': 'Dashboard',
-    'nav.login': 'Sign in with Google',
+    'nav.login': 'Sign in',
     'common.loading': 'Loading…',
     'common.verifyingIdentity': 'Verifying identity…',
     'common.backToPanel': 'Back to dashboard',
@@ -247,6 +248,7 @@ const STRINGS = {
 
     'landing.tag': 'Anchored in Bitcoin · ML-DSA-87 signature · Verifiable by anyone',
     'landing.betaBanner': 'Closed beta. X-39 Agreements is being integrated: creating agreements is not open to the public yet. Proofs already issued can be verified with independent tools. It does not replace a public notary or a qualified electronic signature.',
+    'ag.pqAuthFail': 'The other party\'s encryption key is unsigned or its signature is invalid. For safety, the chat stays locked until this is resolved.',
     'landing.h1': 'Verifiable agreements, anchored in Bitcoin.',
     'landing.h1b': 'Every proof carries an ML-DSA-87 (FIPS 204) signature from the operator and can be verified with independent tools, without relying on us.',
     'landing.chipPq': 'ML-DSA-87 · FIPS-204',
@@ -474,13 +476,14 @@ const STRINGS = {
   zh: {
     'nav.verify': '验证',
     'nav.panel': '控制台',
-    'nav.login': '使用 Google 登录',
+    'nav.login': '登录',
     'common.loading': '加载中…',
     'common.verifyingIdentity': '正在验证身份…',
     'common.backToPanel': '返回控制台',
     'common.goToPanel': '进入我的控制台',
     'landing.tag': '锚定比特币 · ML-DSA-87 签名 · 任何人皆可验证',
     'landing.betaBanner': '封闭测试版。X-39 Agreements 正在集成中：协议创建功能尚未向公众开放。已签发的证明可用独立工具验证。它不能替代公证处或合格电子签名。',
+    'ag.pqAuthFail': '对方的加密密钥未签名或签名无效。为安全起见，聊天将保持锁定，直到问题解决。',
     'landing.h1': '可验证的协议，锚定于比特币。',
     'landing.h1b': '每份证明都带有运营方的 ML-DSA-87（FIPS 204）签名，可用独立工具验证，无需依赖我们。',
     'landing.chipPq': 'ML-DSA-87 · FIPS-204',
@@ -683,13 +686,14 @@ const STRINGS = {
   ja: {
     'nav.verify': '検証',
     'nav.panel': 'ダッシュボード',
-    'nav.login': 'Google でログイン',
+    'nav.login': 'ログイン',
     'common.loading': '読み込み中…',
     'common.verifyingIdentity': '本人確認中…',
     'common.backToPanel': 'ダッシュボードに戻る',
     'common.goToPanel': 'マイダッシュボードへ',
     'landing.tag': 'ビットコインにアンカー · ML-DSA-87 署名 · 誰でも検証可能',
     'landing.betaBanner': 'クローズドベータ。X-39 Agreements は統合中のため、合意の作成はまだ一般公開されていません。発行済みの証明は独立したツールで検証できます。公証人や適格電子署名の代わりにはなりません。',
+    'ag.pqAuthFail': '相手方の暗号鍵が署名されていないか、署名が無効です。安全のため、解決するまでチャットはロックされます。',
     'landing.chipPq': 'ML-DSA-87 · FIPS-204',
     'landing.chipBtc': 'Bitcoin · OpenTimestamps',
     'landing.chipTrust': 'SHA-256 はブラウザ内で計算',
@@ -911,7 +915,7 @@ const STRINGS = {
   ar: {
     'nav.verify': 'تحقّق',
     'nav.panel': 'لوحتي',
-    'nav.login': 'الدخول عبر Google',
+    'nav.login': 'الدخول',
     'common.loading': 'جارٍ التحميل…',
     'common.verifyingIdentity': 'جارٍ التحقق من الهوية…',
     'common.backToPanel': 'العودة إلى اللوحة',
@@ -919,6 +923,7 @@ const STRINGS = {
 
     'landing.tag': 'مثبَّت على بيتكوين · توقيع ML-DSA-87 · قابل للتحقق من أي شخص',
     'landing.betaBanner': 'نسخة تجريبية مغلقة. X-39 Agreements قيد التكامل: إنشاء الاتفاقيات غير متاح للعموم بعد. يمكن التحقق من الإثباتات الصادرة بأدوات مستقلة. لا يحل محل كاتب العدل ولا التوقيع الإلكتروني المؤهل.',
+    'ag.pqAuthFail': 'مفتاح التشفير الخاص بالطرف الآخر غير موقَّع أو توقيعه غير صالح. للأمان، تبقى المحادثة مقفلة حتى يُحل ذلك.',
     'landing.h1': 'اتفاقيات قابلة للتحقق، مثبَّتة على بيتكوين.',
     'landing.h1b': 'كل إثبات يحمل توقيع ML-DSA-87 (FIPS 204) من المشغِّل ويمكن التحقق منه بأدوات مستقلة دون الاعتماد علينا.',
     'landing.chipPq': 'ML-DSA-87 · FIPS-204',

@@ -198,8 +198,7 @@ class ColdSigModel(BaseModel):
     signature_b64: str
 
 
-# ---------- Auth (Google OAuth, server-side session exchange) ----------
-SESSION_API = "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data"
+# ---------- Auth ----------
 
 
 def _get_or_create_user(email: str, name: Optional[str], picture: Optional[str]) -> dict:
@@ -258,37 +257,6 @@ def require_csrf(request: Request) -> str:
     return sess["email"]
 
 
-class SessionExchangeModel(BaseModel):
-    session_id: str
-
-
-@notaria_router.post("/auth/session")
-async def auth_session(data: SessionExchangeModel, request: Request, response: Response):
-    _rate_limit(request, "auth", limit=10, window=60)
-    try:
-        r = requests.get(SESSION_API, headers={"X-Session-ID": data.session_id}, timeout=15)
-    except requests.RequestException:
-        raise HTTPException(502, "Servicio de autenticacion no disponible")
-    if r.status_code != 200:
-        raise HTTPException(401, "session_id invalido o expirado")
-    d = r.json()
-    email = (d.get("email") or "").lower().strip()
-    session_token = d.get("session_token")
-    if not email or not session_token:
-        raise HTTPException(401, "Identidad incompleta")
-    user = _get_or_create_user(email, d.get("name"), d.get("picture"))
-    csrf = secrets.token_urlsafe(32)
-    ns.update_one(
-        {"session_token": session_token},
-        {"$set": {"session_token": session_token, "email": email, "user_id": user["user_id"],
-                  "csrf_token": csrf,
-                  "expires_at": (datetime.now(timezone.utc) + timedelta(days=7)).isoformat(),
-                  "created_at": _now()}},
-        upsert=True,
-    )
-    response.set_cookie("session_token", session_token, max_age=7 * 24 * 3600,
-                        httponly=True, secure=True, samesite="lax", path="/")
-    return {"email": email, "name": user.get("name", ""), "picture": user.get("picture", ""), "csrf_token": csrf}
 
 
 @notaria_router.get("/auth/me")
@@ -316,6 +284,61 @@ async def auth_logout(request: Request, response: Response):
     return {"ok": True}
 
 
+# ---------- Auth por clave (reto Ed25519, sesion propia; sin correo ni terceros) ----------
+nchal = _db["notaria_auth_challenges"]
+nchal.create_index("nonce", unique=True)
+nchal.create_index("expires_at", expireAfterSeconds=0)
+class KeyChallengeModel(BaseModel):
+    pub_b64: str
+class KeyVerifyModel(BaseModel):
+    pub_b64: str
+    nonce: str
+    sig_b64: str
+@notaria_router.post("/auth/key/challenge")
+async def auth_key_challenge(data: KeyChallengeModel, request: Request):
+    _rate_limit(request, "auth", limit=10, window=60)
+    if _b64_len(data.pub_b64) != 32:
+        raise HTTPException(400, "pub_b64 invalida (32 bytes Ed25519)")
+    nonce = secrets.token_hex(32)
+    nchal.insert_one({"nonce": nonce, "pub_b64": data.pub_b64, "used": False,
+                      "expires_at": datetime.now(timezone.utc) + timedelta(minutes=5)})
+    return {"nonce": nonce, "payload": f"x39auth:v1:{nonce}", "expires_in": 300}
+@notaria_router.post("/auth/key/verify")
+async def auth_key_verify(data: KeyVerifyModel, request: Request, response: Response):
+    _rate_limit(request, "auth", limit=10, window=60)
+    ch = nchal.find_one({"nonce": data.nonce, "pub_b64": data.pub_b64, "used": False})
+    if not ch:
+        raise HTTPException(401, "Reto inexistente o ya usado")
+    exp = ch["expires_at"]
+    if exp.tzinfo is None:
+        exp = exp.replace(tzinfo=timezone.utc)
+    if exp < datetime.now(timezone.utc):
+        raise HTTPException(401, "Reto expirado")
+    if _b64_len(data.sig_b64) != 64:
+        raise HTTPException(400, "sig_b64 invalida (64 bytes Ed25519)")
+    try:
+        from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+        raw = base64.b64decode(data.pub_b64)
+        Ed25519PublicKey.from_public_bytes(raw).verify(
+            base64.b64decode(data.sig_b64), f"x39auth:v1:{data.nonce}".encode())
+    except Exception:
+        raise HTTPException(401, "Firma del reto invalida")
+    nchal.update_one({"nonce": data.nonce}, {"$set": {"used": True}})
+    identity = "key:" + hashlib.sha256(raw).hexdigest()[:16]
+    user = _get_or_create_user(identity, None, None)
+    session_token = secrets.token_urlsafe(32)
+    csrf = secrets.token_urlsafe(32)
+    ns.update_one(
+        {"session_token": session_token},
+        {"$set": {"session_token": session_token, "email": identity, "user_id": user["user_id"],
+                  "auth": "ed25519", "pub_b64": data.pub_b64, "csrf_token": csrf,
+                  "expires_at": (datetime.now(timezone.utc) + timedelta(days=7)).isoformat(),
+                  "created_at": _now()}},
+        upsert=True,
+    )
+    response.set_cookie("session_token", session_token, max_age=7 * 24 * 3600,
+                        httponly=True, secure=True, samesite="lax", path="/")
+    return {"identity": identity, "csrf_token": csrf}
 # ---------- Agreements ----------
 class CreateAgreementModel(BaseModel):
     title: str
@@ -461,6 +484,7 @@ class E2EKeyModel(BaseModel):
 class E2EPQKeyModel(BaseModel):
     xwing_pub_b64: Optional[str] = None
     xwing_ct_b64: Optional[str] = None
+    xwing_pub_sig_b64: Optional[str] = None   # firma Ed25519 (sig.js) de A sobre x39xwing:v2:<aid>:<xwing_pub_b64>
 
 
 def _role(a: dict, email: str) -> str:
@@ -506,6 +530,17 @@ async def post_message(aid: str, data: MessageModel, request: Request, email: st
             raise HTTPException(400, "Firma v3 requiere cts valido")
         if _b64_len(sig_b64) != 64:
             raise HTTPException(400, "sig_b64 invalida (64 bytes Ed25519)")
+        # v3.1: verificar la firma del autor contra su clave publicada (sig_keys[rol]). Sin clave o invalida -> 400.
+        pk_b64 = (a.get("sig_keys") or {}).get(_role(a, email))
+        if not pk_b64:
+            raise HTTPException(400, "Publica tu clave de firma (sig_key) antes de enviar mensajes firmados")
+        try:
+            from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+            content_hash = hashlib.sha256((ct + iv).encode()).hexdigest()
+            Ed25519PublicKey.from_public_bytes(base64.b64decode(pk_b64)).verify(
+                base64.b64decode(sig_b64), f"x39msg:v3:{aid}:{content_hash}:{cts}".encode())
+        except Exception:
+            raise HTTPException(400, "Firma Ed25519 del mensaje invalida")
     if nmsg.count_documents({"agreement_id": aid}) >= 500:
         raise HTTPException(409, "Limite de 500 mensajes por acuerdo alcanzado")
     msg = {"agreement_id": aid, "sender": email, "ct": ct, "iv": iv, "ts": _now()}
@@ -570,6 +605,10 @@ async def publish_e2e_pq_key(aid: str, data: E2EPQKeyModel, email: str = Depends
         if _b64_len(data.xwing_pub_b64) != XWING_PK_LEN:
             raise HTTPException(400, f"xwing_pub_b64 invalida ({XWING_PK_LEN} bytes X-Wing)")
         entry["xwing_pub_b64"] = data.xwing_pub_b64
+        if data.xwing_pub_sig_b64 is not None:
+            if _b64_len(data.xwing_pub_sig_b64) != 64:
+                raise HTTPException(400, "xwing_pub_sig_b64 invalida (64 bytes Ed25519)")
+            entry["xwing_pub_sig_b64"] = data.xwing_pub_sig_b64
     if data.xwing_ct_b64 is not None:
         if role != "B":
             raise HTTPException(400, "Solo el rol B publica la encapsulacion X-Wing")
@@ -592,9 +631,10 @@ async def get_e2e_pq_keys(aid: str, email: str = Depends(current_user)):
         raise HTTPException(403, "Acceso restringido")
     keys = a.get("e2e_pq", {})
     pub_a = (keys.get("A") or {}).get("xwing_pub_b64")
+    sig_a = (keys.get("A") or {}).get("xwing_pub_sig_b64")
     ct_b = (keys.get("B") or {}).get("xwing_ct_b64")
     return {"suite": keys.get("suite"),
-            "A": {"xwing_pub_b64": pub_a} if pub_a else None,
+            "A": {"xwing_pub_b64": pub_a, "xwing_pub_sig_b64": sig_a} if pub_a else None,
             "B": {"xwing_ct_b64": ct_b} if ct_b else None}
 
 
