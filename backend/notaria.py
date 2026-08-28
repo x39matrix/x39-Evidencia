@@ -316,6 +316,61 @@ async def auth_logout(request: Request, response: Response):
     return {"ok": True}
 
 
+# ---------- Auth por clave (reto Ed25519, sesion propia; sin correo ni terceros) ----------
+nchal = _db["notaria_auth_challenges"]
+nchal.create_index("nonce", unique=True)
+nchal.create_index("expires_at", expireAfterSeconds=0)
+class KeyChallengeModel(BaseModel):
+    pub_b64: str
+class KeyVerifyModel(BaseModel):
+    pub_b64: str
+    nonce: str
+    sig_b64: str
+@notaria_router.post("/auth/key/challenge")
+async def auth_key_challenge(data: KeyChallengeModel, request: Request):
+    _rate_limit(request, "auth", limit=10, window=60)
+    if _b64_len(data.pub_b64) != 32:
+        raise HTTPException(400, "pub_b64 invalida (32 bytes Ed25519)")
+    nonce = secrets.token_hex(32)
+    nchal.insert_one({"nonce": nonce, "pub_b64": data.pub_b64, "used": False,
+                      "expires_at": datetime.now(timezone.utc) + timedelta(minutes=5)})
+    return {"nonce": nonce, "payload": f"x39auth:v1:{nonce}", "expires_in": 300}
+@notaria_router.post("/auth/key/verify")
+async def auth_key_verify(data: KeyVerifyModel, request: Request, response: Response):
+    _rate_limit(request, "auth", limit=10, window=60)
+    ch = nchal.find_one({"nonce": data.nonce, "pub_b64": data.pub_b64, "used": False})
+    if not ch:
+        raise HTTPException(401, "Reto inexistente o ya usado")
+    exp = ch["expires_at"]
+    if exp.tzinfo is None:
+        exp = exp.replace(tzinfo=timezone.utc)
+    if exp < datetime.now(timezone.utc):
+        raise HTTPException(401, "Reto expirado")
+    if _b64_len(data.sig_b64) != 64:
+        raise HTTPException(400, "sig_b64 invalida (64 bytes Ed25519)")
+    try:
+        from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+        raw = base64.b64decode(data.pub_b64)
+        Ed25519PublicKey.from_public_bytes(raw).verify(
+            base64.b64decode(data.sig_b64), f"x39auth:v1:{data.nonce}".encode())
+    except Exception:
+        raise HTTPException(401, "Firma del reto invalida")
+    nchal.update_one({"nonce": data.nonce}, {"$set": {"used": True}})
+    identity = "key:" + hashlib.sha256(raw).hexdigest()[:16]
+    user = _get_or_create_user(identity, None, None)
+    session_token = secrets.token_urlsafe(32)
+    csrf = secrets.token_urlsafe(32)
+    ns.update_one(
+        {"session_token": session_token},
+        {"$set": {"session_token": session_token, "email": identity, "user_id": user["user_id"],
+                  "auth": "ed25519", "pub_b64": data.pub_b64, "csrf_token": csrf,
+                  "expires_at": (datetime.now(timezone.utc) + timedelta(days=7)).isoformat(),
+                  "created_at": _now()}},
+        upsert=True,
+    )
+    response.set_cookie("session_token", session_token, max_age=7 * 24 * 3600,
+                        httponly=True, secure=True, samesite="lax", path="/")
+    return {"identity": identity, "csrf_token": csrf}
 # ---------- Agreements ----------
 class CreateAgreementModel(BaseModel):
     title: str
