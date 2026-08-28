@@ -4,3 +4,5 @@ build/
 *.log
 .DS_Store
 __pycache__/
+backend/hwg/ots_work/
+backend/hwg/ots_cache/
