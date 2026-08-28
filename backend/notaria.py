@@ -198,8 +198,7 @@ class ColdSigModel(BaseModel):
     signature_b64: str
 
 
-# ---------- Auth (Google OAuth, server-side session exchange) ----------
-SESSION_API = "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data"
+# ---------- Auth ----------
 
 
 def _get_or_create_user(email: str, name: Optional[str], picture: Optional[str]) -> dict:
@@ -258,37 +257,6 @@ def require_csrf(request: Request) -> str:
     return sess["email"]
 
 
-class SessionExchangeModel(BaseModel):
-    session_id: str
-
-
-@notaria_router.post("/auth/session")
-async def auth_session(data: SessionExchangeModel, request: Request, response: Response):
-    _rate_limit(request, "auth", limit=10, window=60)
-    try:
-        r = requests.get(SESSION_API, headers={"X-Session-ID": data.session_id}, timeout=15)
-    except requests.RequestException:
-        raise HTTPException(502, "Servicio de autenticacion no disponible")
-    if r.status_code != 200:
-        raise HTTPException(401, "session_id invalido o expirado")
-    d = r.json()
-    email = (d.get("email") or "").lower().strip()
-    session_token = d.get("session_token")
-    if not email or not session_token:
-        raise HTTPException(401, "Identidad incompleta")
-    user = _get_or_create_user(email, d.get("name"), d.get("picture"))
-    csrf = secrets.token_urlsafe(32)
-    ns.update_one(
-        {"session_token": session_token},
-        {"$set": {"session_token": session_token, "email": email, "user_id": user["user_id"],
-                  "csrf_token": csrf,
-                  "expires_at": (datetime.now(timezone.utc) + timedelta(days=7)).isoformat(),
-                  "created_at": _now()}},
-        upsert=True,
-    )
-    response.set_cookie("session_token", session_token, max_age=7 * 24 * 3600,
-                        httponly=True, secure=True, samesite="lax", path="/")
-    return {"email": email, "name": user.get("name", ""), "picture": user.get("picture", ""), "csrf_token": csrf}
 
 
 @notaria_router.get("/auth/me")
