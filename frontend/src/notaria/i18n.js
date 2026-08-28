@@ -4,7 +4,7 @@ const STRINGS = {
   es: {
     'nav.verify': 'Verificar',
     'nav.panel': 'Panel',
-    'nav.login': 'Entrar con Google',
+    'nav.login': 'Entrar',
     'common.loading': 'Cargando…',
     'common.verifyingIdentity': 'Verificando identidad…',
     'common.backToPanel': 'Volver al panel',
@@ -240,7 +240,7 @@ const STRINGS = {
   en: {
     'nav.verify': 'Verify',
     'nav.panel': 'Dashboard',
-    'nav.login': 'Sign in with Google',
+    'nav.login': 'Sign in',
     'common.loading': 'Loading…',
     'common.verifyingIdentity': 'Verifying identity…',
     'common.backToPanel': 'Back to dashboard',
@@ -476,7 +476,7 @@ const STRINGS = {
   zh: {
     'nav.verify': '验证',
     'nav.panel': '控制台',
-    'nav.login': '使用 Google 登录',
+    'nav.login': '登录',
     'common.loading': '加载中…',
     'common.verifyingIdentity': '正在验证身份…',
     'common.backToPanel': '返回控制台',
@@ -686,7 +686,7 @@ const STRINGS = {
   ja: {
     'nav.verify': '検証',
     'nav.panel': 'ダッシュボード',
-    'nav.login': 'Google でログイン',
+    'nav.login': 'ログイン',
     'common.loading': '読み込み中…',
     'common.verifyingIdentity': '本人確認中…',
     'common.backToPanel': 'ダッシュボードに戻る',
@@ -915,7 +915,7 @@ const STRINGS = {
   ar: {
     'nav.verify': 'تحقّق',
     'nav.panel': 'لوحتي',
-    'nav.login': 'الدخول عبر Google',
+    'nav.login': 'الدخول',
     'common.loading': 'جارٍ التحميل…',
     'common.verifyingIdentity': 'جارٍ التحقق من الهوية…',
     'common.backToPanel': 'العودة إلى اللوحة',

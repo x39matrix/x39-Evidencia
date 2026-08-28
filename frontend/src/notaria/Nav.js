@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { LogOut } from 'lucide-react';
 import { useAuth } from './NotariaApp';
 import { useLang, LANGS } from './i18n';
-import { api, loginWithGoogle } from './api';
+import { api, goLogin } from './api';
 
 export const Nav = () => {
   const { user, setUser } = useAuth();
@@ -33,7 +33,7 @@ export const Nav = () => {
               </button>
             </>
           ) : (
-            <button className="nt-btn nt-btn-primary" onClick={() => loginWithGoogle('/panel')} data-testid="nav-login-btn">
+            <button className="nt-btn nt-btn-primary" onClick={() => goLogin('/panel')} data-testid="nav-login-btn">
               {t('nav.login')}
             </button>
           )}
