@@ -34,7 +34,7 @@ GPG_HOME.mkdir(parents=True, exist_ok=True)
 os.chmod(GPG_HOME, 0o700)
 
 # Resolve binary paths at import time so we don't rely on supervisor's PATH.
-OTS_BIN = shutil.which("ots") or "/root/.venv/bin/ots"
+OTS_BIN = os.environ.get("HWG_OTS_BIN") or shutil.which("ots") or "/root/.venv/bin/ots"
 GPG_BIN = shutil.which("gpg") or "/usr/bin/gpg"
 
 BOT_NAME = "HWG Notary Bot"
