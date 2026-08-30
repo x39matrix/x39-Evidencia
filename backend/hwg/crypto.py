@@ -226,11 +226,11 @@ async def ots_info_probe(sha256_hex: str, ots_b64: str,
         text = out.decode(errors="replace") + err.decode(errors="replace")
     except asyncio.TimeoutError:
         text = ""
-    btc_match = _BTC_BLOCK_RE.search(text)
+    btc_matches = _BTC_BLOCK_RE.findall(text)
     pending_matches = _PENDING_RE.findall(text)
-    if btc_match:
+    if btc_matches:
         status = "anchored_btc"
-        btc_block: Optional[int] = int(btc_match.group(1))
+        btc_block: Optional[int] = min(int(b) for b in btc_matches)
     elif pending_matches:
         status = "pending"
         btc_block = None
