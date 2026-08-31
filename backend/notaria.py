@@ -1030,22 +1030,49 @@ ots upgrade proof.json.ots && ots verify proof.json.ots
 > verifiable (public key embedded in `signatures.json`). For new agreements, post-quantum authorship is
 > provided exclusively by the COLD co-signature (air-gapped sk, never networked).
 
+Huella COLD esperada / expected COLD fingerprint: `8453a25a41d6fe8fcb5647600f042a7c303daaca79b80928534025711981c6a1`
+CONTRASTALA por un canal independiente de este ZIP (la web de X-39, un correo previo): un bundle falso puede traer su propia clave y su propia huella, coherentes entre si. / CROSS-CHECK it out-of-band: a forged bundle can ship its own key and matching fingerprint.
+
 ```
 pip install pqcrypto
 python3 verify_mldsa.py
 ```
 Contenido de `verify_mldsa.py` / contents:
 ```python
-import json, base64
+import json, base64, hashlib
 from pqcrypto.sign import ml_dsa_87
+
+# Huella de la clave COLD de X-39. Contrastala fuera de este bundle (ver README).
+COLD_FP = "8453a25a41d6fe8fcb5647600f042a7c303daaca79b80928534025711981c6a1"
+
+def verify_ok(pk, msg, sig):
+    # pqcrypto >= 1.0.0 devuelve None si la firma es valida y LANZA excepcion si no;
+    # versiones previas devuelven True/False. Esto cubre ambas convenciones.
+    try:
+        return ml_dsa_87.verify(pk, msg, sig) is not False
+    except Exception:
+        return False
+
 s = json.load(open("signatures.json"))
 p = open("proof.json", "rb").read()
 for tier in ("warm", "cold"):
     t = s.get(tier)
     if not t:
         continue
-    ok = ml_dsa_87.verify(base64.b64decode(t["public_key_b64"]), p, base64.b64decode(t["signature_b64"]))
-    print(tier.upper(), "ML-DSA-87:", "VALID" if ok else "INVALID")
+    pk = base64.b64decode(t["public_key_b64"])
+    sig = base64.b64decode(t["signature_b64"])
+    valid = verify_ok(pk, p, sig)
+    bad = bytearray(sig)
+    bad[0] ^= 1
+    if valid and verify_ok(pk, p, bytes(bad)):
+        print("AVISO: esta instalacion acepta una firma ALTERADA; veredicto no fiable")
+        valid = False
+    fp = hashlib.sha256(pk).hexdigest()
+    print(tier.upper(), "ML-DSA-87:", "VALID" if valid else "INVALID", "| huella/fp:", fp)
+    if tier == "cold":
+        print("  clave COLD", "RECONOCIDA de X-39" if fp == COLD_FP else "NO RECONOCIDA: NO es la autoridad de X-39")
+    else:
+        print("  WARM informativa: clave de servidor retirada 2026-07-16 (SEC-003), no acredita autoria")
 ```
 
 ### 3.5 Firmas por mensaje / Per-message signatures (X39-NOTARIA-3)
