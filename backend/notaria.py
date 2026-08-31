@@ -348,7 +348,13 @@ async def auth_key_challenge(data: KeyChallengeModel, request: Request):
 @notaria_router.post("/auth/key/verify")
 async def auth_key_verify(data: KeyVerifyModel, request: Request, response: Response):
     _rate_limit(request, "auth", limit=10, window=60)
-    ch = nchal.find_one({"nonce": data.nonce, "pub_b64": data.pub_b64, "used": False})
+    # Consumo ATOMICO del reto: encontrar-y-marcar en una sola operacion de Mongo.
+    # Cierra la carrera find/update (dos verificaciones concurrentes ya no pueden
+    # pasar las dos). Si la firma luego no verifica, el reto queda quemado: se pide otro.
+    ch = nchal.find_one_and_update(
+        {"nonce": data.nonce, "pub_b64": data.pub_b64, "used": False},
+        {"$set": {"used": True}},
+    )
     if not ch:
         raise HTTPException(401, "Reto inexistente o ya usado")
     exp = ch["expires_at"]
@@ -365,7 +371,6 @@ async def auth_key_verify(data: KeyVerifyModel, request: Request, response: Resp
             base64.b64decode(data.sig_b64), f"x39auth:v1:{data.nonce}".encode())
     except Exception:
         raise HTTPException(401, "Firma del reto invalida")
-    nchal.update_one({"nonce": data.nonce}, {"$set": {"used": True}})
     identity = "key:" + hashlib.sha256(raw).hexdigest()[:16]
     user = _get_or_create_user(identity, None, None)
     session_token = secrets.token_urlsafe(32)
