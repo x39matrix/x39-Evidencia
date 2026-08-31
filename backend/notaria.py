@@ -30,6 +30,48 @@ from pqcrypto.sign import ml_dsa_87 as _mldsa
 
 from hwg.crypto import ots_stamp, ots_info_probe, ots_upgrade
 
+
+# ---------------------------------------------------------------------------
+# ML-DSA-87: primitivo unico de verificacion + autotest de arranque.
+#
+# Las versiones de pqcrypto no coinciden en como reporta verify() el resultado:
+#   - 0.4.x  : devuelve True/False (y generate_keypair).
+#   - >=1.0.0: devuelve None si la firma es valida y LANZA InvalidSignatureError
+#              si no (y keygen).
+# Un `if not verify(...)` o un `bool(verify(...))` rechaza firmas BUENAS bajo la
+# segunda convencion. Todo el modulo verifica SOLO a traves de _mldsa_ok().
+#
+# El autotest corre al importar: si la libreria instalada acepta una firma
+# alterada o rechaza una valida, el servicio NO arranca. Un verificador que
+# miente es peor que un servicio caido: caido se ve, mintiendo no.
+# ---------------------------------------------------------------------------
+def _mldsa_ok(pk: bytes, msg: bytes, sig: bytes) -> bool:
+    """True si la firma ML-DSA-87 es valida. Fail-closed: cualquier excepcion es fallo."""
+    try:
+        return _mldsa.verify(pk, msg, sig) is not False
+    except Exception:
+        return False
+
+
+def _mldsa_selftest() -> None:
+    kg = getattr(_mldsa, "keygen", None) or getattr(_mldsa, "generate_keypair", None)
+    if kg is None:
+        raise RuntimeError("pqcrypto/ml_dsa_87 sin keygen ni generate_keypair: version desconocida, no arranco")
+    pk, sk = kg()
+    msg = b"x39-selftest-mldsa"
+    sig = _mldsa.sign(sk, msg)
+    if not _mldsa_ok(pk, msg, sig):
+        raise RuntimeError("autotest ML-DSA: la libreria instalada RECHAZA una firma valida "
+                           "(convencion de retorno incompatible); no arranco con un verificador que miente")
+    bad = bytearray(sig)
+    bad[0] ^= 1
+    if _mldsa_ok(pk, msg, bytes(bad)):
+        raise RuntimeError("autotest ML-DSA: la libreria instalada ACEPTA una firma alterada; "
+                           "no arranco con un verificador que miente")
+
+
+_mldsa_selftest()
+
 MONGO_URL = os.environ["MONGO_URL"]
 DB_NAME = os.environ.get("DB_NAME", "x39matrix")
 
@@ -831,14 +873,14 @@ async def verify_public(data: VerifyModel, request: Request):
         payload = base64.b64decode(payload_b64)
         if a.get("pq") and a["pq"].get("signature_b64"):
             try:
-                pq_valid = bool(_mldsa.verify(base64.b64decode(a["pq"]["public_key_b64"]),
-                                              payload, base64.b64decode(a["pq"]["signature_b64"])))
+                pq_valid = _mldsa_ok(base64.b64decode(a["pq"]["public_key_b64"]),
+                                     payload, base64.b64decode(a["pq"]["signature_b64"]))
             except Exception:
                 pq_valid = False
         if a.get("cold") and a["cold"].get("signature_b64"):
             try:
-                cold_valid = bool(_mldsa.verify(base64.b64decode(a["cold"]["public_key_b64"]),
-                                                payload, base64.b64decode(a["cold"]["signature_b64"])))
+                cold_valid = _mldsa_ok(base64.b64decode(a["cold"]["public_key_b64"]),
+                                       payload, base64.b64decode(a["cold"]["signature_b64"]))
             except Exception:
                 cold_valid = False
     return {
@@ -950,7 +992,7 @@ async def upload_cold_signature(aid: str, data: ColdSigModel, x_admin_token: str
         sig = base64.b64decode(data.signature_b64)
     except Exception:
         raise HTTPException(400, "signature_b64 invalida")
-    if not _mldsa.verify(pk, payload, sig):
+    if not _mldsa_ok(pk, payload, sig):
         raise HTTPException(400, "La firma COLD no verifica sobre el payload anclado")
     cold = {"algorithm": "ML-DSA-87", "tier": "COLD", "signature_b64": data.signature_b64,
             "public_key_b64": pk_b64, "fingerprint": fp, "verified_at": _now()}
