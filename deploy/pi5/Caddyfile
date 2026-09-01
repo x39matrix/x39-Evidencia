@@ -1,0 +1,29 @@
+api.x39matrix.org {
+	log
+	encode zstd gzip
+
+	request_body {
+		max_size 20MB
+	}
+
+	@docs path /docs /docs/* /redoc /redoc/* /openapi.json /api/docs /api/docs/* /api/redoc /api/openapi.json
+	respond @docs 404
+
+	@admin {
+		path /api/notaria/admin/*
+		not remote_ip 127.0.0.1 ::1
+	}
+	respond @admin 404
+
+	reverse_proxy 127.0.0.1:8000 {
+		header_up X-Forwarded-For {remote_host}
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "no-referrer"
+		-Server
+	}
+}
