@@ -223,13 +223,36 @@ def _require_admin(x_admin_token: str):
         raise HTTPException(403, "Token de operador invalido")
 
 
+# Huella (sha256 de la pk cruda) de la UNICA clave COLD que este servidor reconoce como autoridad de X-39.
+# Fijada en codigo y versionada en git: ni Mongo ni /admin/cold_key pueden cambiar la autoridad.
+COLD_FP_PINNED = "8453a25a41d6fe8fcb5647600f042a7c303daaca79b80928534025711981c6a1"
+
+
 def _cold_pubkey():
-    """Devuelve (pk_bytes, pk_b64, fingerprint) de la clave COLD soberana registrada, o None."""
+    """Devuelve (pk_bytes, pk_b64, fingerprint) de la clave COLD registrada, o None.
+    Si la registrada NO coincide con COLD_FP_PINNED se trata como inexistente y se deja constancia."""
     doc = nmeta.find_one({"_id": "cold_mldsa_pub"})
     if not doc:
         return None
     pk_b64 = doc["pk"]
-    return base64.b64decode(pk_b64), pk_b64, doc["fingerprint"]
+    pk = base64.b64decode(pk_b64)
+    fp = hashlib.sha256(pk).hexdigest()
+    if fp != COLD_FP_PINNED or doc.get("fingerprint") != fp:
+        print(f"[COLD] ALERTA: la clave COLD de Mongo (fp {fp[:16]}...) NO es la fijada en codigo. Se ignora.", flush=True)
+        return None
+    return pk, pk_b64, fp
+
+
+def cold_startup_check():
+    """Autoexamen de arranque: si Mongo contiene una clave COLD distinta de la fijada, el servidor NO arranca."""
+    doc = nmeta.find_one({"_id": "cold_mldsa_pub"})
+    if not doc:
+        print(f"[COLD] AVISO: no hay clave COLD registrada. Solo se aceptara la de huella {COLD_FP_PINNED[:16]}...", flush=True)
+        return
+    fp = hashlib.sha256(base64.b64decode(doc["pk"])).hexdigest()
+    if fp != COLD_FP_PINNED:
+        raise RuntimeError(f"[COLD] La clave COLD registrada (fp {fp}) NO coincide con COLD_FP_PINNED ({COLD_FP_PINNED}). Arranque abortado.")
+    print(f"[COLD] OK: la clave COLD registrada coincide con la huella fijada {COLD_FP_PINNED[:16]}...", flush=True)
 
 
 class ColdKeyModel(BaseModel):
@@ -884,8 +907,9 @@ async def verify_public(data: VerifyModel, request: Request):
                 pq_valid = False
         if a.get("cold") and a["cold"].get("signature_b64"):
             try:
-                cold_valid = _mldsa_ok(base64.b64decode(a["cold"]["public_key_b64"]),
-                                       payload, base64.b64decode(a["cold"]["signature_b64"]))
+                cold_pk = base64.b64decode(a["cold"]["public_key_b64"])
+                cold_pinned = hashlib.sha256(cold_pk).hexdigest() == COLD_FP_PINNED
+                cold_valid = cold_pinned and _mldsa_ok(cold_pk, payload, base64.b64decode(a["cold"]["signature_b64"]))
             except Exception:
                 cold_valid = False
     return {
@@ -964,6 +988,8 @@ async def register_cold_key(data: ColdKeyModel, x_admin_token: str = Header(defa
     if len(pk) != _mldsa.PUBLIC_KEY_SIZE:
         raise HTTPException(400, f"Tamano de clave ML-DSA-87 invalido (esperado {_mldsa.PUBLIC_KEY_SIZE})")
     fp = hashlib.sha256(pk).hexdigest()
+    if fp != COLD_FP_PINNED:
+        raise HTTPException(403, "Esa clave NO es la autoridad COLD fijada en el codigo de este servidor")
     nmeta.update_one({"_id": "cold_mldsa_pub"},
                      {"$set": {"pk": data.public_key_b64, "fingerprint": fp, "registered_at": _now()}},
                      upsert=True)

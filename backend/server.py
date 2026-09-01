@@ -6,7 +6,7 @@ load_dotenv()
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI(title="X-39 Notaría")
+app = FastAPI(title="X-39 Notaría", docs_url=None, redoc_url=None, openapi_url=None)
 
 # CORS restringido: solo origenes explicitos de CORS_ORIGINS (.env). El frontend es same-origin
 # (mismo dominio via ingress), asi que esto solo bloquea a webs de terceros (anti-CSRF).
@@ -16,6 +16,8 @@ app.add_middleware(CORSMiddleware, allow_origins=_cors_origins, allow_credential
 # --- X-39 Notaria router (agreements + chat E2E + OTS Bitcoin anchoring + PDF cert) ---
 from notaria import notaria_router, seed_demo as _notaria_seed_demo
 app.include_router(notaria_router, prefix="/api")
+from notaria import cold_startup_check as _cold_startup_check
+_cold_startup_check()  # autoexamen COLD: si Mongo tiene otra autoridad, el servidor no arranca
 if os.environ.get("X39_SEED_DEMO", "false").lower() == "true":
     try:
         _notaria_seed_demo()
