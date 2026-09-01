@@ -11,6 +11,14 @@ app = FastAPI(title="X-39 Notaría", docs_url=None, redoc_url=None, openapi_url=
 # CORS restringido: solo origenes explicitos de CORS_ORIGINS (.env). El frontend es same-origin
 # (mismo dominio via ingress), asi que esto solo bloquea a webs de terceros (anti-CSRF).
 _cors_origins = [o.strip() for o in os.environ.get("CORS_ORIGINS", "").split(",") if o.strip() and o.strip() != "*"]
+# Limites de peticiones por IP (slowapi). Se registra ANTES de CORS para que los 429 lleven cabeceras CORS.
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+from ratelimit import limiter
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 app.add_middleware(CORSMiddleware, allow_origins=_cors_origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 # --- X-39 Notaria router (agreements + chat E2E + OTS Bitcoin anchoring + PDF cert) ---

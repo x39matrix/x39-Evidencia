@@ -23,6 +23,7 @@ from typing import Optional
 
 import requests
 from fastapi import APIRouter, HTTPException, Depends, Request, Response, Header, BackgroundTasks
+from ratelimit import limiter
 from fastapi.responses import HTMLResponse, StreamingResponse
 from pydantic import BaseModel
 from pymongo import MongoClient
@@ -360,6 +361,7 @@ class KeyVerifyModel(BaseModel):
     nonce: str
     sig_b64: str
 @notaria_router.post("/auth/key/challenge")
+@limiter.limit("10/minute")
 async def auth_key_challenge(data: KeyChallengeModel, request: Request):
     _rate_limit(request, "auth", limit=10, window=60)
     if _b64_len(data.pub_b64) != 32:
@@ -369,6 +371,7 @@ async def auth_key_challenge(data: KeyChallengeModel, request: Request):
                       "expires_at": datetime.now(timezone.utc) + timedelta(minutes=5)})
     return {"nonce": nonce, "payload": f"x39auth:v1:{nonce}", "expires_in": 300}
 @notaria_router.post("/auth/key/verify")
+@limiter.limit("10/minute")
 async def auth_key_verify(data: KeyVerifyModel, request: Request, response: Response):
     _rate_limit(request, "auth", limit=10, window=60)
     # Consumo ATOMICO del reto: encontrar-y-marcar en una sola operacion de Mongo.
@@ -458,6 +461,7 @@ def _public_view(a: dict, email: Optional[str] = None) -> dict:
 
 
 @notaria_router.post("/agreements")
+@limiter.limit("20/minute")
 async def create_agreement(data: CreateAgreementModel, request: Request, email: str = Depends(require_csrf)):
     _rate_limit(request, "create", limit=20, window=60)
     ch = data.content_hash.lower().strip()
@@ -522,7 +526,8 @@ class JoinModel(BaseModel):
 
 
 @notaria_router.post("/agreements/{aid}/join")
-async def join_agreement(aid: str, data: JoinModel, email: str = Depends(require_csrf)):
+@limiter.limit("10/minute")
+async def join_agreement(aid: str, data: JoinModel, request: Request, email: str = Depends(require_csrf)):
     a = na.find_one({"agreement_id": aid}, {"_id": 0})
     if not a:
         raise HTTPException(404, "Acuerdo no encontrado")
@@ -870,7 +875,8 @@ async def _refresh_ots(a: dict) -> dict:
 
 
 @notaria_router.post("/agreements/{aid}/ots/refresh")
-async def refresh_ots(aid: str, email: str = Depends(require_csrf)):
+@limiter.limit("6/minute")
+async def refresh_ots(aid: str, request: Request, email: str = Depends(require_csrf)):
     a = na.find_one({"agreement_id": aid}, {"_id": 0})
     if not a or not _member(a, email):
         raise HTTPException(403, "Acceso restringido")
@@ -885,6 +891,7 @@ class VerifyModel(BaseModel):
 
 
 @notaria_router.post("/verify")
+@limiter.limit("20/minute")
 async def verify_public(data: VerifyModel, request: Request):
     _rate_limit(request, "verify", limit=30, window=60)
     h = data.hash.lower().strip()
@@ -951,6 +958,7 @@ async def public_proof(aid: str):
 
 # ---------- Estado de pago (solo lectura, no custodial) ----------
 @notaria_router.get("/agreements/{aid}/payment_status")
+@limiter.limit("30/minute")
 async def payment_status(aid: str, request: Request):
     _rate_limit(request, "paystatus", limit=30, window=60)
     a = na.find_one({"agreement_id": aid}, {"_id": 0})

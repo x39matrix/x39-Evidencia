@@ -1,0 +1,29 @@
+[Unit]
+Description=X-39 Notaria API
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=x39api
+Group=x39api
+WorkingDirectory=/opt/x39/api/backend
+EnvironmentFile=/etc/x39/api.env
+Environment=PATH=/opt/x39/api/.venv/bin:/usr/local/bin:/usr/bin:/bin
+Environment=HOME=/opt/x39/api/home
+ExecStart=/opt/x39/api/.venv/bin/uvicorn server:app --host 127.0.0.1 --port 8000 --proxy-headers --forwarded-allow-ips=127.0.0.1
+Restart=on-failure
+RestartSec=5
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/x39/api
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target
