@@ -1,0 +1,12 @@
+# Dependencias REALES de X-39 Notaria (inventario 01/09/2026). Fijadas con pip freeze tras probar en .venv-new.
+fastapi
+uvicorn
+pydantic
+pymongo
+python-dotenv
+requests
+cryptography
+reportlab
+slowapi
+pqcrypto==0.4.0
+opentimestamps-client==0.7.2
