@@ -859,14 +859,30 @@ async def sign_agreement(aid: str, background_tasks: BackgroundTasks, email: str
     return _public_view(a, email)
 
 
+# Orden de calidad de los estados OTS: nunca se persiste un estado peor que el ya guardado.
+_OTS_RANK = {"anchored_btc": 3, "pending": 2, "pending_calendars": 2, "not_stamped": 1}
+
+
 async def _refresh_ots(a: dict) -> dict:
-    """Intenta actualizar la prueba OTS contra los calendarios y devuelve estado real."""
+    """Intenta actualizar la prueba OTS contra los calendarios y devuelve estado real.
+    Si `ots` o los calendarios fallan y el resultado es PEOR que lo guardado, no se persiste:
+    un fallo transitorio no degrada en Mongo un acuerdo ya anclado."""
     ots = a.get("ots")
     if not ots or not ots.get("ots_b64"):
         return {"status": "not_stamped", "btc_block": None}
     payload = base64.b64decode(ots["payload_b64"])
     ph = a["proof"]["proof_hash"]
-    new_b64, info = await ots_upgrade(ph, ots["ots_b64"], payload)
+    prev_status, prev_block = ots.get("status"), ots.get("btc_block")
+    try:
+        new_b64, info = await ots_upgrade(ph, ots["ots_b64"], payload)
+    except Exception as e:
+        print(f"[OTS] ERROR: refresco de {a['agreement_id']} fallo ({type(e).__name__}: {e}); "
+              f"se devuelve el estado guardado {prev_status}.", flush=True)
+        return {"status": prev_status, "btc_block": prev_block}
+    if _OTS_RANK.get(info["ots_status"], 0) < _OTS_RANK.get(prev_status, 0):
+        print(f"[OTS] AVISO: refresco de {a['agreement_id']} devolvio {info['ots_status']} "
+              f"con estado previo {prev_status}; no se persiste.", flush=True)
+        return {"status": prev_status, "btc_block": prev_block}
     ots["ots_b64"] = new_b64
     ots["status"] = info["ots_status"]
     ots["btc_block"] = info["btc_block"]
