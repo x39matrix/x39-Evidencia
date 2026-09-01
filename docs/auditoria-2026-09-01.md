@@ -24,3 +24,8 @@ Reto de login de 256 bits, 5 min, ligado a la llave, consumo atómico; sesión 2
 - Fase E (04–07/09): desplegar el frontend con dependencias nuevas (con rollback), subdominios www y evidences, textos frente a capacidades en el bundle desplegado, revisar service worker.
 - Confirmar apagado de Emergent cuando responda el soporte.
 - Octubre, auditoría E2E con el frontend delante: firmar y fijar la llave P-256; verificar `xwing_pub_sig_b64` en servidor y bloquear cambio de pubkey X-Wing tras el ciphertext de B; identidad con sha256 completo (con migración); incluir el host en el texto firmado del reto; migrar de CRA a Vite; código en solo lectura (root) con `ReadWritePaths` acotado.
+
+## Despliegue web (01/09/2026, 16:15)
+- Canister tvkfy actualizado desde `frontend/` con las dependencias de runtime nuevas y `public/verify_bundle.py` (huella COLD clavada): bundle `main.86428dd0.js`, `/verify_bundle.py` 200, `/verificar` 200, ic-domains OK. Rollback en `~/home_viejo/x39web/dist.rollback-20260901-1613`.
+- Service worker `x39matrix-v13-20260828` revisado: navegacion red-primero, assets con hash cache-primero; no requiere bump por despliegue.
+- Pendiente Fase E: `security_policy` en `.ic-assets.json5` (con prueba), subdominios www y evidences, huella WARM historica en verificadores.
