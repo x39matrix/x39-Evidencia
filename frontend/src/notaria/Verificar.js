@@ -144,8 +144,8 @@ export default function Verificar() {
             </div>
             {bundleBusy && <p className="nt-note nt-mono" style={{ marginTop: 14 }}>{t('ver.bverifying')}</p>}
             {bundleReport && (
-              <div className="nt-card nt-card-pad" style={{ marginTop: 28, borderColor: bundleReport.verdict === 'fail' ? 'var(--error)' : 'var(--seal)' }} data-testid="verify-bundle-result">
-                <h2 className="nt-serif" style={{ fontSize: 22, fontWeight: 600, margin: '0 0 16px', color: bundleReport.verdict === 'fail' ? 'var(--error)' : 'var(--seal)' }} data-testid="verify-bundle-verdict">
+              <div className="nt-card nt-card-pad" style={{ marginTop: 28, borderColor: bundleReport.verdict === 'fail' ? 'var(--error)' : bundleReport.verdict === 'consistent' ? '#8A6D1F' : 'var(--seal)' }} data-testid="verify-bundle-result">
+                <h2 className="nt-serif" style={{ fontSize: 22, fontWeight: 600, margin: '0 0 16px', color: bundleReport.verdict === 'fail' ? 'var(--error)' : bundleReport.verdict === 'consistent' ? '#8A6D1F' : 'var(--seal)' }} data-testid="verify-bundle-verdict">
                   {t(`ver.bverdict.${bundleReport.verdict}`)}
                 </h2>
                 {bundleReport.checks.map((c) => (

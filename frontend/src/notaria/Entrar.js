@@ -122,7 +122,8 @@ export default function Entrar() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const nextRaw = params.get('next') || '/panel';
-  const next = nextRaw.startsWith('/') ? nextRaw : '/panel';
+  // Solo rutas internas: '/x'. Se rechaza '//host' (URL relativa a protocolo = redireccion externa).
+  const next = nextRaw.startsWith('/') && !nextRaw.startsWith('//') ? nextRaw : '/panel';
   const [mode, setMode] = useState(hasKey() ? 'have' : 'choose');
   const [block, setBlock] = useState('');
   const [saved, setSaved] = useState(false);
