@@ -52,3 +52,6 @@ tocó hasta que las pruebas estuvieron en verde. Commit: 8d030d39 (rama textos-h
 - El sellado real con `proof.files` se confirmará con el primer acuerdo nuevo en producción.
 - El fuzzing por bytes aporta poco aquí (el CRC del ZIP rechaza cualquier byte cambiado antes de
   llegar a la lógica); el siguiente paso es un fuzzer estructural, en proceso y con cobertura.
+
+### Revisión posterior (mismo día, 18:10)
+- `_mldsa_ok` en `backend/notaria.py` devuelve `verify(...) is not False` y el servicio ejecuta un autoexamen al arrancar (firma válida aceptada, firma alterada rechazada; si la librería falla en cualquiera de los dos sentidos, no arranca). Punto 4: revisado y correcto, sin cambios.
