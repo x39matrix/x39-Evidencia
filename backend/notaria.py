@@ -806,6 +806,10 @@ async def _seal(a: dict):
                 proof["sig_keys"] = a["sig_keys"]
             if signed_n == len(chain_entries):
                 proof["v"] = "X39-NOTARIA-3"
+    # Manifiesto: README congelado AQUI (antes del hash); su sha256 viaja dentro del payload
+    # y queda anclado en Bitcoin y cubierto por la co-firma COLD.
+    readme = _bundle_readme(a["agreement_id"])
+    proof["files"] = {"README.md": hashlib.sha256(readme.encode()).hexdigest()}
     payload = json.dumps(proof, sort_keys=True, separators=(",", ":")).encode()
     proof_hash = hashlib.sha256(payload).hexdigest()
     proof["proof_hash"] = proof_hash
@@ -818,7 +822,7 @@ async def _seal(a: dict):
         "calendars": calendars,
         "stamped_at": _now(),
     }
-    upd = {"status": "sealed", "sealed_at": proof["sealed_at"], "proof": proof, "ots": ots_doc}
+    upd = {"status": "sealed", "sealed_at": proof["sealed_at"], "proof": proof, "ots": ots_doc, "readme": readme}
     if is_v2:
         upd["chat_chain"] = {"agreement_id": a["agreement_id"], "v": proof["v"], "entries": chain_entries}
     na.update_one({"agreement_id": a["agreement_id"]}, {"$set": upd})
@@ -1081,7 +1085,32 @@ async def download_proof_json(aid: str):
                              headers={"Content-Disposition": f'attachment; filename="x39-prueba-{aid}.json"'})
 
 
-def _bundle_readme(aid: str, proof_hash: str, has_ots: bool, has_cold: bool) -> str:
+def _bundle_readme(aid: str) -> str:
+    """README CONGELABLE: texto fijo, sin proof_hash incrustado; su sha256 va en proof['files']."""
+    return (
+        "# X-39 Notaria - Bundle de evidencia / Evidence bundle\n\n"
+        f"Acuerdo / Agreement: {aid}\n\n"
+        "Bundle autocontenido: NO necesitas confiar en X-39 ni en ningun servidor para verificarlo.\n\n"
+        "## Contenido\n"
+        "- proof.json       Payload canonico sellado (bytes exactos firmados y anclados)\n"
+        "- proof.json.ots   Prueba OpenTimestamps (ancla en Bitcoin)\n"
+        "- signatures.json  Firmas ML-DSA-87 (FIPS-204) y claves publicas\n"
+        "- README.md        Esta guia\n\n"
+        "proof.json incluye 'files' (sha256 de README.md): esta guia queda cubierta\n"
+        "por el ancla de Bitcoin. signatures.json se verifica por criptografia (proof_hash y firmas).\n\n"
+        "## 1. Integridad\n"
+        "   sha256sum proof.json  -> debe igualar el proof_hash de signatures.json.\n\n"
+        "## 2. Fecha en Bitcoin\n"
+        "   ots verify proof.json.ots   (sin nodo: ots info, o https://opentimestamps.org)\n\n"
+        "## 3. Firma post-cuantica (ML-DSA-87, FIPS-204)\n"
+        "WARM (operador) RETIRADA 2026-07-16 (SEC-003); firmas WARM historicas siguen verificables.\n"
+        "En acuerdos nuevos la autoria PQ la aporta, SI EXISTE, la co-firma COLD (air-gapped).\n"
+        "Huella COLD esperada: 8453a25a41d6fe8fcb5647600f042a7c303daaca79b80928534025711981c6a1\n"
+        "CONTRASTALA fuera de este ZIP: un bundle falso trae su propia clave y huella coherentes.\n"
+    )
+
+
+def _bundle_readme_legacy(aid: str, proof_hash: str, has_ots: bool, has_cold: bool) -> str:
     ots_note = "" if has_ots else "\n> AVISO: este acuerdo aun no tiene prueba OTS adjunta. / NOTE: this agreement has no OTS proof attached yet.\n"
     return f"""# X-39 Notaría — Bundle de evidencia / Evidence bundle
 
@@ -1214,7 +1243,7 @@ async def download_evidence_bundle(aid: str):
                                 "total": a["proof"]["msg_sigs"]["total"]}
                                if (a.get("proof") or {}).get("msg_sigs") else None),
     }
-    readme = _bundle_readme(aid, proof_hash, bool(ots_raw), bool(a.get("cold")))
+    readme = a.get("readme") or _bundle_readme_legacy(aid, proof_hash, bool(ots_raw), bool(a.get("cold")))
     entries = [("README.md", readme.encode()), ("proof.json", payload)]
     if ots_raw:
         entries.append(("proof.json.ots", ots_raw))

@@ -54,6 +54,22 @@ export async function verifyBundle(file) {
     .every((f) => proof[f] == null || sigs[f] == null || proof[f] === sigs[f]);
   add('consistency', consistent);
 
+  // 2b. Manifiesto: proof.files = {nombre: sha256}. Ficheros informativos (p.ej. README.md)
+  // congelados al sellar: su hash viaja dentro de proof.json y queda anclado en Bitcoin.
+  // Cada fichero listado debe existir y coincidir byte a byte. Sin manifiesto: sin comprobacion.
+  if (proof.files && typeof proof.files === 'object' && !Array.isArray(proof.files)) {
+    let manOk = true;
+    const names = [];
+    for (const [name, h] of Object.entries(proof.files)) {
+      const f = zip.file(name);
+      if (!f) { manOk = false; break; }
+      const got = await sha256Hex(await f.async('uint8array'));
+      if (typeof h !== 'string' || got !== h.toLowerCase()) { manOk = false; break; }
+      names.push(name);
+    }
+    add('manifest', manOk, { files: names });
+  }
+
   // 3. Cadena de chat (v2/v3)
   if (proof.chat_merkle_root) {
     const chainFile = zip.file('chat_chain.json');

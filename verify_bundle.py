@@ -336,6 +336,26 @@ def verify_ots(proof_bytes: bytes, ots_bytes: bytes, bitcoin_node: str | None = 
             die(EXIT_OTS, f"ots verify fallo:\n{r.stdout}\n{r.stderr}")
 
 
+def verify_manifest(files: dict[str, bytes], proof: dict[str, Any]) -> list[str]:
+    """proof['files'] = {nombre: sha256}: manifiesto de ficheros informativos (p.ej. README.md)
+    congelados al sellar. Cada fichero listado debe existir en el ZIP y coincidir byte a byte.
+    Sin manifiesto (bundles anteriores) no se exige nada; el resumen lo avisa."""
+    man = proof.get("files")
+    if not man:
+        return []
+    if not isinstance(man, dict):
+        die(EXIT_INTEGRITY, "proof.files no es un objeto {nombre: sha256}")
+    ok: list[str] = []
+    for name, h in man.items():
+        if name not in files:
+            die(EXIT_INTEGRITY, f"manifiesto: falta {name} en el ZIP")
+        got = hashlib.sha256(files[name]).hexdigest()
+        if not isinstance(h, str) or got != h.lower():
+            die(EXIT_INTEGRITY, f"manifiesto: {name} sha256 mismatch claimed={h} recomputed={got}")
+        ok.append(name)
+    return ok
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="X-39 Notaria - verificador de referencia offline")
     ap.add_argument("bundle", type=Path, help="x39-evidencia-<aid>.zip")
@@ -348,6 +368,7 @@ def main() -> None:
     files = load_zip(args.bundle)
     proof_bytes = files["proof.json"]
     proof = parse_json_bytes(proof_bytes, "proof.json")
+    manifest_ok = verify_manifest(files, proof)
     verify_content_hash(proof, args.content)
     verify_chat_chain_v2(files, proof)
     verify_msg_sigs(files, proof)
@@ -371,6 +392,25 @@ def main() -> None:
     if cold_fp:
         print(f"  co-firma:    COLD ML-DSA-87 valida · clave PINEADA {cold_fp}")
     print(f"  sealed_at:   {proof.get('sealed_at')}  (informativo; la fecha real es OTS/Bitcoin)")
+    # Honestidad de cobertura: que ficheros del ZIP respalda este veredicto y cuales no.
+    verificados = {"proof.json", "signatures.json"}
+    omitidos = set()
+    if args.skip_ots:
+        omitidos.add("proof.json.ots")
+    else:
+        verificados.add("proof.json.ots")
+    if proof.get("v", "") in ("X39-NOTARIA-2", "X39-NOTARIA-3"):
+        verificados.add("chat_chain.json")
+    verificados |= set(manifest_ok)
+    presentes = set(files)
+    no_cubiertos = sorted(presentes - verificados - omitidos)
+    print(f"  verificados: {', '.join(sorted(verificados & presentes))}")
+    if omitidos:
+        print(f"  omitidos:    {', '.join(sorted(omitidos))}  (--skip-ots)")
+    if no_cubiertos:
+        print(f"  NO cubiertos: {', '.join(no_cubiertos)}  (sin hash ni firma que los proteja: informativos, NO son evidencia)")
+    else:
+        print("  NO cubiertos: ninguno")
     sys.exit(EXIT_OK)
 
 
