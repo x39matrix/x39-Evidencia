@@ -10,7 +10,7 @@ t(){ if [ "$1" -eq 0 ]; then echo "PASS  $2"; pass=$((pass+1)); else echo "FAIL 
 code(){ curl -s -o /dev/null -w '%{http_code}' $R "$@"; }
 echo "== X-39 check $(date -Is) =="
 [ "$(systemctl is-active x39-api)" = active ]; t $? "servicio x39-api activo"
-sudo journalctl -u x39-api -n 300 --no-pager | grep '\[COLD\]' | tail -1 | grep -q 'OK'; t $? "ultimo autoexamen COLD: OK"
+sudo journalctl -u x39-api --no-pager --since "$(systemctl show x39-api -p ActiveEnterTimestamp --value)" | grep '\[COLD\]' | tail -1 | grep -q 'OK'; t $? "ultimo autoexamen COLD: OK"
 [ "$(code $B/api/health)" = 200 ]; t $? "health 200"
 for p in /docs /redoc /openapi.json /api/docs; do [ "$(code $B$p)" = 404 ]; t $? "$p oculto (404)"; done
 [ "$(code -X POST -H 'Content-Type: application/json' -d '{"public_key_b64":"AA=="}' $B/api/notaria/admin/cold_key)" = 403 ]; t $? "admin exige token (403 sin token, desde localhost)"
