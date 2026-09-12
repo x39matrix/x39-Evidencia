@@ -55,7 +55,7 @@ EXIT_OK, EXIT_INTEGRITY, EXIT_SIG, EXIT_OTS, EXIT_IO = 0, 1, 2, 3, 4
 # confiar en el. Si no la has contrastado, no has verificado nada: te has fiado.
 # ---------------------------------------------------------------------------
 TRUSTED_COLD_FINGERPRINTS = {
-    # Pi 500 aislada — clave COLD original (en servicio desde 2026-08)
+    # Pi 500 aislada — clave COLD (ceremonia 2026-07-16, keygen #2 tras rotacion honesta; unica autoridad desde esa fecha)
     "8453a25a41d6fe8fcb5647600f042a7c303daaca79b80928534025711981c6a1",
 }
 
