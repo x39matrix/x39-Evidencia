@@ -69,6 +69,9 @@ def _mldsa_selftest() -> None:
     if _mldsa_ok(pk, msg, bytes(bad)):
         raise RuntimeError("autotest ML-DSA: la libreria instalada ACEPTA una firma alterada; "
                            "no arranco con un verificador que miente")
+    if _mldsa_ok(pk, msg + b"x", sig):
+        raise RuntimeError("autotest ML-DSA: la libreria instalada ACEPTA un mensaje alterado; "
+                           "no arranco con un verificador que miente")
 
 
 _mldsa_selftest()
@@ -254,6 +257,17 @@ def cold_startup_check():
     if fp != COLD_FP_PINNED:
         raise RuntimeError(f"[COLD] La clave COLD registrada (fp {fp}) NO coincide con COLD_FP_PINNED ({COLD_FP_PINNED}). Arranque abortado.")
     print(f"[COLD] OK: la clave COLD registrada coincide con la huella fijada {COLD_FP_PINNED[:16]}...", flush=True)
+
+
+def sealing_sweep():
+    """Barrendero de arranque: el sellado corre en un unico proceso, asi que al arrancar
+    nadie puede estar sellando de verdad. Todo acuerdo en 'sealing' es un cadaver de
+    apagon o reinicio a mitad de sellado: vuelve a 'pending_signatures' y el siguiente
+    clic lo re-dispara. Las firmas ya guardadas se conservan."""
+    res = na.update_many({"status": "sealing"}, {"$set": {"status": "pending_signatures"}})
+    if res.modified_count:
+        print(f"[SEAL] AVISO: {res.modified_count} acuerdo(s) atascados en 'sealing' devueltos "
+              f"a 'pending_signatures' (reinicio a mitad de sellado).", flush=True)
 
 
 class ColdKeyModel(BaseModel):
@@ -850,16 +864,32 @@ async def sign_agreement(aid: str, background_tasks: BackgroundTasks, email: str
     if a["status"] in ("sealed", "sealing"):
         return _public_view(a, email)
     role = "A" if email == a["party_a"] else "B"
-    sigs = a.get("signatures", {})
-    sigs[role] = _now()
-    both = bool(a.get("party_b")) and "A" in sigs and "B" in sigs
-    new_status = "sealing" if both else a["status"]
-    na.update_one({"agreement_id": aid}, {"$set": {"signatures": sigs, "status": new_status}})
+    firmado = _now()
+    # Cada firma va a SU campo: dos firmantes simultaneos ya no se pisan el dict entero.
+    na.update_one({"agreement_id": aid}, {"$set": {f"signatures.{role}": firmado}})
+    sigs = dict(a.get("signatures", {}))
+    sigs[role] = firmado
     a["signatures"] = sigs
-    a["status"] = new_status
-    # El sellado (firma ML-DSA + anclaje OTS) corre en segundo plano: respuesta inmediata al firmante.
+    both = bool(a.get("party_b")) and "A" in sigs and "B" in sigs
     if both:
-        background_tasks.add_task(_seal_bg, aid)
+        # Pase ATOMICO a 'sealing': solo un llamante puede ganarlo, asi que el sellado
+        # se dispara exactamente una vez (cierra la carrera y el doble clic).
+        res = na.update_one(
+            {"agreement_id": aid,
+             "status": {"$nin": ["sealing", "sealed"]},
+             "signatures.A": {"$exists": True},
+             "signatures.B": {"$exists": True}},
+            {"$set": {"status": "sealing"}},
+        )
+        if res.modified_count == 1:
+            a["status"] = "sealing"
+            # El sellado (firma ML-DSA + anclaje OTS) corre en segundo plano: respuesta inmediata al firmante.
+            background_tasks.add_task(_seal_bg, aid)
+        else:
+            # No es error: otro llamante ya lo disparo. Se refleja el estado real.
+            cur = na.find_one({"agreement_id": aid}, {"_id": 0, "status": 1})
+            if cur:
+                a["status"] = cur["status"]
     return _public_view(a, email)
 
 
@@ -1062,12 +1092,23 @@ async def upload_cold_signature(aid: str, data: ColdSigModel, x_admin_token: str
 
 
 # ---------- Descarga publica de la prueba (verificacion independiente) ----------
+def _require_ots_publicable(a: dict) -> dict:
+    """No se sirve evidencia sin prueba OTS publicable ("sella hoy, difunde manana").
+    ots_b64 = prueba OpenTimestamps publicable (puede estar pendiente de confirmacion);
+    payload_b64 = los bytes EXACTOS que se firmaron y se sellaron. Si falta cualquiera
+    de los dos, 404: nunca un bundle a medias ni un proof reconstruido al vuelo."""
+    ots = a.get("ots") or {}
+    if not ots.get("payload_b64") or not ots.get("ots_b64"):
+        raise HTTPException(404, "Evidencia aún no disponible: la prueba OpenTimestamps no se ha obtenido.")
+    return ots
+
+
 @notaria_router.get("/proof/{aid}.ots")
 async def download_proof_ots(aid: str):
     a = na.find_one({"agreement_id": aid, "status": "sealed"}, {"_id": 0})
-    if not a or not (a.get("ots") or {}).get("ots_b64"):
-        raise HTTPException(404, "Prueba OTS no disponible")
-    data = base64.b64decode(a["ots"]["ots_b64"])
+    if not a:
+        raise HTTPException(404, "Prueba no disponible")
+    data = base64.b64decode(_require_ots_publicable(a)["ots_b64"])
     return StreamingResponse(io.BytesIO(data), media_type="application/octet-stream",
                              headers={"Content-Disposition": f'attachment; filename="x39-prueba-{aid}.ots"'})
 
@@ -1077,10 +1118,7 @@ async def download_proof_json(aid: str):
     a = na.find_one({"agreement_id": aid, "status": "sealed"}, {"_id": 0})
     if not a:
         raise HTTPException(404, "Prueba no disponible")
-    if (a.get("ots") or {}).get("payload_b64"):
-        payload = base64.b64decode(a["ots"]["payload_b64"])
-    else:
-        payload = json.dumps(a["proof"], sort_keys=True, separators=(",", ":")).encode()
+    payload = base64.b64decode(_require_ots_publicable(a)["payload_b64"])
     return StreamingResponse(io.BytesIO(payload), media_type="text/plain; charset=utf-8",
                              headers={"Content-Disposition": f'attachment; filename="x39-prueba-{aid}.json"'})
 
@@ -1219,12 +1257,13 @@ With all 4 steps verified, you hold mathematical evidence of existence, integrit
 
 @notaria_router.get("/proof/{aid}.zip")
 async def download_evidence_bundle(aid: str):
-    """Bundle de evidencia autocontenido. ZIP determinista: mismo acuerdo sellado -> mismos bytes."""
+    """Bundle de evidencia autocontenido. ZIP determinista: mismo ESTADO sellado -> mismos bytes."""
     a = na.find_one({"agreement_id": aid, "status": "sealed"}, {"_id": 0})
-    if not a or not (a.get("ots") or {}).get("payload_b64"):
+    if not a:
         raise HTTPException(404, "Evidencia no disponible")
-    payload = base64.b64decode(a["ots"]["payload_b64"])
-    ots_raw = base64.b64decode(a["ots"]["ots_b64"]) if a["ots"].get("ots_b64") else None
+    ots = _require_ots_publicable(a)
+    payload = base64.b64decode(ots["payload_b64"])
+    ots_raw = base64.b64decode(ots["ots_b64"])
     proof_hash = a["proof"]["proof_hash"]
     sigs = {
         "agreement_id": aid,
@@ -1244,9 +1283,8 @@ async def download_evidence_bundle(aid: str):
                                if (a.get("proof") or {}).get("msg_sigs") else None),
     }
     readme = a.get("readme") or _bundle_readme_legacy(aid, proof_hash, bool(ots_raw), bool(a.get("cold")))
-    entries = [("README.md", readme.encode()), ("proof.json", payload)]
-    if ots_raw:
-        entries.append(("proof.json.ots", ots_raw))
+    entries = [("README.md", readme.encode()), ("proof.json", payload),
+               ("proof.json.ots", ots_raw)]
     entries.append(("signatures.json", json.dumps(sigs, ensure_ascii=False, indent=2, sort_keys=True).encode()))
     if a.get("chat_chain"):
         entries.append(("chat_chain.json", json.dumps(a["chat_chain"], ensure_ascii=False, indent=2, sort_keys=True).encode()))

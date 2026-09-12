@@ -26,6 +26,8 @@ from notaria import notaria_router, seed_demo as _notaria_seed_demo
 app.include_router(notaria_router, prefix="/api")
 from notaria import cold_startup_check as _cold_startup_check
 _cold_startup_check()  # autoexamen COLD: si Mongo tiene otra autoridad, el servidor no arranca
+from notaria import sealing_sweep as _sealing_sweep
+_sealing_sweep()  # barrendero: acuerdos atascados en sealing por un reinicio vuelven a pendientes
 if os.environ.get("X39_SEED_DEMO", "false").lower() == "true":
     try:
         _notaria_seed_demo()
