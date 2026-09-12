@@ -39,6 +39,18 @@ def fp(pk_bytes):
     return hashlib.sha256(pk_bytes).hexdigest()
 
 
+def _mldsa_ok(pk, msg, sig):
+    """True SOLO si la firma ML-DSA-87 es valida.
+    Normaliza las DOS convenciones de pqcrypto: unas versiones devuelven bool,
+    otras devuelven None y lanzan excepcion al fallar. Es la leccion de Paris 3.9:
+    un `if not verify(...)` en crudo rechaza firmas BUENAS bajo la segunda.
+    Fail-closed: cualquier excepcion cuenta como fallo."""
+    try:
+        return mldsa.verify(pk, msg, sig) is not False
+    except Exception:
+        return False
+
+
 # ---------- cifrado opcional de la sk (AES-GCM + scrypt), stdlib pura ----------
 MAGIC = b"X39SKv1\n"
 
@@ -72,6 +84,10 @@ def _load_sk(path):
 
 # ---------- keygen ----------
 def cmd_keygen(a):
+    if os.path.exists(a.sk) and not a.force:
+        die(f"{a.sk} YA EXISTE. Generar encima DESTRUIRIA la clave COLD actual de forma "
+            f"irreversible y obligaria a una ceremonia nueva (rotar la huella en el "
+            f"verificador, el backend y la politica). Si de verdad es lo que quieres: --force")
     pk, sk = mldsa.generate_keypair()
     if len(pk) != mldsa.PUBLIC_KEY_SIZE or len(sk) != mldsa.SECRET_KEY_SIZE:
         die("tamanos ML-DSA-87 inesperados; aborta")
@@ -127,7 +143,7 @@ def cmd_sign(a):
     # candado local: re-verificar offline con la pk derivable? necesitamos pk.
     if a.pk and os.path.isfile(a.pk):
         pk = base64.b64decode(open(a.pk).read().strip())
-        if not mldsa.verify(pk, payload, sig):
+        if not _mldsa_ok(pk, payload, sig):
             die("la firma NO verifica offline contra la pk. Aborta.")
         print("[verify] OK offline: la firma verifica bajo la pubkey registrada.")
     else:
@@ -147,7 +163,7 @@ def cmd_verify(a):
     payload = open(a.payload, "rb").read()
     pk = base64.b64decode(open(a.pk).read().strip())
     sig = base64.b64decode(open(a.sig).read().strip())
-    ok = mldsa.verify(pk, payload, sig)
+    ok = _mldsa_ok(pk, payload, sig)
     print(f"fingerprint pk = {fp(pk)}")
     print(f"sha256(payload) = {hashlib.sha256(payload).hexdigest()}")
     print("VERIFICA" if ok else "NO VERIFICA")
@@ -162,6 +178,8 @@ def main():
     g.add_argument("--sk", default="mldsa87.sk")
     g.add_argument("--pk", default="mldsa87.pk")
     g.add_argument("--plain", action="store_true", help="guardar sk en claro (default: cifrada)")
+    g.add_argument("--force", action="store_true",
+                   help="permitir sobrescribir una sk existente (DESTRUYE la clave COLD actual)")
     g.set_defaults(func=cmd_keygen)
 
     s = sub.add_parser("sign", help="firma el payload anclado (offline)")
