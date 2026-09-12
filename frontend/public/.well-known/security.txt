@@ -1,0 +1,11 @@
+# X-39 Notaría — divulgación responsable de vulnerabilidades
+# X-39 Notaría — responsible vulnerability disclosure
+#
+# Proyecto de código abierto (AGPL-3.0) mantenido por una sola persona.
+# Si encuentras un fallo de seguridad, escribe antes de hacerlo público:
+# se agradece el aviso y se responde lo antes posible.
+
+Contact: mailto:security@x39matrix.org
+Expires: 2027-09-01T00:00:00.000Z
+Preferred-Languages: es, en
+Canonical: https://x39matrix.org/.well-known/security.txt
