@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FileText, PenLine, Anchor, ShieldCheck, Users, Coins, Atom, SearchCheck } from 'lucide-react';
+import { FileText, PenLine, Anchor, ShieldCheck, Users, Coins, Atom, SearchCheck, KeyRound } from 'lucide-react';
 import { Nav } from './Nav';
 import { useAuth } from './NotariaApp';
 import { useLang } from './i18n';
@@ -9,9 +9,44 @@ import { api, goLogin } from './api';
 const DEMO_CERT_ID = '31e1cf09a5b2a74cd978';
 const STEP_ICONS = [FileText, PenLine, Anchor];
 
+// La criptografía que usa la Notaría de verdad: [algoritmo, estándar, para qué sirve].
+const CRYPTO = {
+  es: { title: 'Criptografía', sub: 'Estándares abiertos que cualquiera puede comprobar.', items: [
+    ['ML-DSA-87', 'NIST FIPS 204', 'Cofirma post-cuántica desde una máquina sin red'],
+    ['OpenTimestamps', 'Bitcoin', 'La fecha queda anclada en un bloque de Bitcoin'],
+    ['SHA-256', 'Web Crypto', 'La huella se calcula en tu navegador'],
+    ['X-Wing', 'ML-KEM-768 + X25519', 'Chat cifrado de extremo a extremo'],
+  ] },
+  en: { title: 'Cryptography', sub: 'Open standards anyone can check.', items: [
+    ['ML-DSA-87', 'NIST FIPS 204', 'Post-quantum co-signature from an air-gapped machine'],
+    ['OpenTimestamps', 'Bitcoin', 'The date is anchored in a Bitcoin block'],
+    ['SHA-256', 'Web Crypto', 'The fingerprint is computed in your browser'],
+    ['X-Wing', 'ML-KEM-768 + X25519', 'End-to-end encrypted chat'],
+  ] },
+  zh: { title: '密码学', sub: '任何人都能核查的开放标准。', items: [
+    ['ML-DSA-87', 'NIST FIPS 204', '来自离线设备的抗量子联署签名'],
+    ['OpenTimestamps', 'Bitcoin', '日期锚定在比特币区块中'],
+    ['SHA-256', 'Web Crypto', '指纹在你的浏览器中计算'],
+    ['X-Wing', 'ML-KEM-768 + X25519', '端到端加密聊天'],
+  ] },
+  ja: { title: '暗号技術', sub: '誰でも検証できるオープン標準。', items: [
+    ['ML-DSA-87', 'NIST FIPS 204', 'ネットワークから隔離された端末による耐量子副署名'],
+    ['OpenTimestamps', 'Bitcoin', '日付をビットコインのブロックに固定'],
+    ['SHA-256', 'Web Crypto', 'ハッシュはブラウザ内で計算'],
+    ['X-Wing', 'ML-KEM-768 + X25519', 'エンドツーエンド暗号化チャット'],
+  ] },
+  ar: { title: 'التشفير', sub: 'معايير مفتوحة يمكن لأي شخص التحقق منها.', items: [
+    ['ML-DSA-87', 'NIST FIPS 204', 'توقيع مشترك مقاوم للحوسبة الكمية من جهاز غير متصل بالشبكة'],
+    ['OpenTimestamps', 'Bitcoin', 'التاريخ مثبت في كتلة بيتكوين'],
+    ['SHA-256', 'Web Crypto', 'تُحسب البصمة في متصفحك'],
+    ['X-Wing', 'ML-KEM-768 + X25519', 'دردشة مشفرة من طرف إلى طرف'],
+  ] },
+};
+
 export default function Landing() {
   const { user } = useAuth();
-  const { t } = useLang();
+  const { t, lang } = useLang();
+  const crypto = CRYPTO[lang] || CRYPTO.en;
   const navigate = useNavigate();
   const [demoProof, setDemoProof] = useState(null);
 
@@ -127,6 +162,23 @@ export default function Landing() {
               <p>{s.d}</p>
             </div>
           ))}
+        </section>
+
+        <section className="nt-crypto" data-testid="landing-crypto">
+          <div className="nt-crypto-head">
+            <KeyRound size={20} strokeWidth={1.5} aria-hidden="true" />
+            <h2>{crypto.title}</h2>
+          </div>
+          <p className="nt-note" style={{ fontSize: 14, margin: '6px 0 0' }}>{crypto.sub}</p>
+          <div className="nt-crypto-grid">
+            {crypto.items.map(([alg, std, desc]) => (
+              <div className="nt-crypto-tile" key={alg}>
+                <div className="nt-crypto-alg">{alg}</div>
+                <div className="nt-crypto-std">{std}</div>
+                <p>{desc}</p>
+              </div>
+            ))}
+          </div>
         </section>
 
         <section style={{ marginBottom: 20 }} data-testid="landing-protect">

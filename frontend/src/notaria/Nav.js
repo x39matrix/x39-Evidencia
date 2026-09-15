@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { LogOut } from 'lucide-react';
+import { LogOut, LockKeyhole } from 'lucide-react';
 import { useAuth } from './NotariaApp';
 import { useLang, LANGS } from './i18n';
 import { api, goLogin } from './api';
@@ -20,7 +20,7 @@ export const Nav = () => {
     <nav className="nt-nav">
       <div className="nt-wrap nt-nav-inner">
         <Link to={user ? '/panel' : '/'} className="nt-brand" data-testid="nav-brand">
-          <img src="/x39_icon_192.png" alt="X-39 Notaría" className="nt-logo-img" data-testid="nav-logo-img" />
+          <LockKeyhole size={26} strokeWidth={2} color="var(--brand)" aria-hidden="true" data-testid="nav-logo-img" />
           X-39 Notaría
         </Link>
         <div className="nt-nav-links">
@@ -28,7 +28,7 @@ export const Nav = () => {
           {user ? (
             <>
               <Link to="/panel" className="nt-btn nt-btn-ghost" data-testid="nav-panel-link">{t('nav.panel')}</Link>
-              <button className="nt-btn nt-btn-ghost" onClick={logout} data-testid="nav-logout-btn" title={user.email}>
+              <button className="nt-btn nt-btn-ghost" onClick={logout} data-testid="nav-logout-btn" aria-label="Log out">
                 <LogOut size={15} strokeWidth={1.5} />
               </button>
             </>
@@ -45,6 +45,7 @@ export const Nav = () => {
               </button>
             ))}
           </span>
+          <span className="nt-brand-mark" data-testid="nav-brand-mark">x39</span>
         </div>
       </div>
     </nav>
