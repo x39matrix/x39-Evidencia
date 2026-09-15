@@ -1,6 +1,8 @@
 // Entrar.js — Entrada por llave (Ed25519). Tu llave ES tu identidad: sin correo, sin terceros.
 // Al crear identidad se OBLIGA a guardar la copia de seguridad antes de entrar.
 import React, { useState } from 'react';
+import { KeyRound } from 'lucide-react';
+import { Nav } from './Nav';
 import { useNavigate, useSearchParams, Navigate } from 'react-router-dom';
 import { useAuth } from './NotariaApp';
 import { useLang } from './i18n';
@@ -191,13 +193,16 @@ export default function Entrar() {
   };
 
   const box = { maxWidth: 560, margin: '0 auto', padding: '48px 20px' };
-  const warn = { border: '1px solid #CC0000', borderRadius: 8, padding: 14, margin: '14px 0' };
-  const keyStyle = { wordBreak: 'break-all', padding: 12, border: '1px dashed #888', borderRadius: 8, margin: '12px 0' };
+  const warn = { border: '1px solid rgba(255,255,255,0.35)', borderRadius: 14, padding: 14, margin: '14px 0' };
+  const keyStyle = { wordBreak: 'break-all', padding: 12, border: '1px dashed rgba(255,255,255,0.25)', borderRadius: 14, margin: '12px 0' };
 
   return (
     <div className="nt">
+      <Nav />
       <div style={box}>
-        <h1>{tt('title')}</h1>
+        <div className="nt-card nt-card-pad">
+        <div className="nt-avatar" aria-hidden="true"><KeyRound size={34} strokeWidth={1.5} /></div>
+        <h1 style={{ textAlign: 'center', fontSize: 28, fontWeight: 700, margin: '0 0 8px' }}>{tt('title')}</h1>
         <p className="nt-note">{tt('intro')}</p>
         {error && <div className="nt-note nt-mono" style={warn} data-testid="entrar-error">{error}</div>}
 
@@ -268,6 +273,7 @@ export default function Entrar() {
             </button>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

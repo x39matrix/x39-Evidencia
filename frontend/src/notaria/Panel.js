@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, ChevronRight } from 'lucide-react';
+import { Plus, ChevronRight, KeyRound } from 'lucide-react';
 import { Nav } from './Nav';
 import { useAuth } from './NotariaApp';
 import { useLang } from './i18n';
@@ -12,10 +12,21 @@ const Badge = ({ status, ots, t }) => {
   return <span className="nt-badge nt-badge-draft">{t('panel.badgeSealedPending')}</span>;
 };
 
+// Cifras del perfil. Sin correo: la identidad es la llave.
+const STATS = {
+  es: ['Acuerdos', 'Sellados', 'En Bitcoin'],
+  en: ['Agreements', 'Sealed', 'On Bitcoin'],
+  zh: ['协议', '已封存', '已上链比特币'],
+  ja: ['合意', '封印済み', 'ビットコイン上'],
+  ar: ['الاتفاقات', 'مختومة', 'في بيتكوين'],
+};
+
 export default function Panel() {
   const { user } = useAuth();
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const [rows, setRows] = useState(null);
+  const labels = STATS[lang] || STATS.en;
+  const count = (fn) => (rows ? rows.filter(fn).length : '—');
 
   useEffect(() => {
     api.listAgreements().then(setRows).catch(() => setRows([]));
@@ -25,16 +36,20 @@ export default function Panel() {
     <div data-testid="panel-page">
       <Nav />
       <main className="nt-wrap" style={{ padding: '40px 20px 80px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 16, marginBottom: 32 }}>
-          <div>
-            <div className="nt-label">{t('panel.kicker')}</div>
-            <h1 className="nt-serif" style={{ fontSize: 36, fontWeight: 600, margin: 0 }}>{t('panel.title')}</h1>
-            <div className="nt-note nt-mono" style={{ marginTop: 6 }} data-testid="panel-user-email">{user?.email}</div>
+        <section className="nt-profile" data-testid="panel-profile">
+          <div className="nt-avatar" aria-hidden="true"><KeyRound size={34} strokeWidth={1.5} /></div>
+          <div className="nt-label">{t('panel.kicker')}</div>
+          <h1>{t('panel.title')}</h1>
+          <div className="nt-note nt-mono" data-testid="panel-user-email">{user?.email}</div>
+          <div className="nt-stats" data-testid="panel-stats">
+            <div className="nt-stat"><b>{rows ? rows.length : '—'}</b><span>{labels[0]}</span></div>
+            <div className="nt-stat"><b>{count((a) => a.status === 'sealed')}</b><span>{labels[1]}</span></div>
+            <div className="nt-stat"><b>{count((a) => a.ots?.status === 'anchored_btc')}</b><span>{labels[2]}</span></div>
           </div>
-          <Link to="/crear" className="nt-btn nt-btn-seal" data-testid="panel-new-agreement-btn">
+          <Link to="/crear" className="nt-btn nt-btn-primary" data-testid="panel-new-agreement-btn">
             <Plus size={16} strokeWidth={2} /> {t('panel.new')}
           </Link>
-        </div>
+        </section>
 
         {rows === null && <div className="nt-note nt-mono">{t('common.loading')}</div>}
 
