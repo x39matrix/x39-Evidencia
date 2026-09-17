@@ -7,7 +7,7 @@ El nodo Bitcoin es una SEGUNDA maquina, siempre online. Roles mutuamente excluye
 ```
 [Pi 500 - COLD]          [Pi 5 - NODO BTC]           [Servidor X-39]
  air-gapped               online 24/7                 Emergent (produccion)
- clave ML-DSA-87          Bitcoin Core (pruned)       OTS stamp via calendarios
+ clave ML-DSA-87          Bitcoin Core (archival)     OTS stamp via calendarios
  co-firma offline         verifica sellos OTS         guarda proof.ots
  sneakernet (USB)         RPC local                   publica bundles
 ```
@@ -21,11 +21,17 @@ Dato tecnico clave: verificar un sello OTS solo requiere el HEADER del bloque
 (merkle root). Un nodo PODADO (pruned) conserva todos los headers.
 => NO hace falta nodo archival de 800+ GB. Un pruned de ~10 GB es suficiente.
 
+ESTADO REAL (17-09-2026): el nodo propio ya esta operativo en la Pi 5, y es
+archival completo (pruned=false, ~876 GB en NVMe), sincronizado al 100%.
+Queda instalar el cliente OpenTimestamps en esa maquina: hoy el nodo ya
+responde consultas de bloque contra la cadena real, pero la verificacion de
+un .ots todavia pasa por calendarios publicos.
+
 ## HARDWARE RECOMENDADO (segunda maquina)
 | Pieza | Opcion | Coste aprox |
 |---|---|---|
 | Placa | Raspberry Pi 5, 8 GB RAM | ~90 EUR |
-| Disco | SSD NVMe 512 GB + HAT M.2 (pruned sobra; 2 TB si algun dia quieres archival) | ~60-70 EUR |
+| Disco | SSD NVMe 512 GB + HAT M.2 (pruned sobra; la instalacion de referencia usa 2 TB archival) | ~60-70 EUR |
 | Alimentacion | Fuente oficial 27W | ~15 EUR |
 | Caja | Con ventilacion activa | ~15 EUR |
 | **Total** | | **~180 EUR** |
