@@ -23,9 +23,19 @@ Dato tecnico clave: verificar un sello OTS solo requiere el HEADER del bloque
 
 ESTADO REAL (17-09-2026): el nodo propio ya esta operativo en la Pi 5, y es
 archival completo (pruned=false, ~876 GB en NVMe), sincronizado al 100%.
-Queda instalar el cliente OpenTimestamps en esa maquina: hoy el nodo ya
-responde consultas de bloque contra la cadena real, pero la verificacion de
-un .ots todavia pasa por calendarios publicos.
+El cliente OpenTimestamps (ots v0.7.2) esta instalado en esa misma maquina
+desde el 18-08-2026, en ~/.local/bin/ots. La cadena de verificacion esta por
+tanto completa: 'ots verify' resuelve el arbol de Merkle contra esta copia
+local de la cadena, sin calendarios ni exploradores.
+
+Verificacion ejecutada el 17-09-2026 sobre la prueba demo del export del T7:
+  digest     9cb107d9260460f260aead0514bdcdc94bcb372fd02742fbe5d59ad25ad59fd9
+  block hash 00000000000000000001bfcdbde1bc40da4d40702c56bbe98553e07e63d39a21
+  resultado  Success! Bitcoin block 957242 attests existence as of 2026-07-09
+
+AVISO OPERATIVO: ~/.local/bin no esta en el PATH de una sesion SSH no
+interactiva. 'which ots' devuelve vacio aunque el cliente este instalado.
+Invocarlo por ruta completa o exportar el PATH antes.
 
 ## HARDWARE RECOMENDADO (segunda maquina)
 | Pieza | Opcion | Coste aprox |
