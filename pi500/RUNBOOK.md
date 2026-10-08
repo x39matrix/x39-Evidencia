@@ -2,7 +2,7 @@
 
 Ensayo completo verificado en preview el 2026-07-10 (cadena register->sign->upload->verify OK,
 firma corrupta rechazada con 400). Este es el guion para el hardware real. Producción:
-`API=https://estado-protocolo.emergent.host`
+`API=https://api.x39matrix.org`
 
 ## Fase 0 — Preparar el Pi (con red, UNA vez)
 ```
@@ -20,7 +20,7 @@ python3 pi500_cold_signer.py keygen          # sk cifrada (recomendado) | --plai
 
 ## Fase 2 — Registrar la pubkey (online)
 ```
-API=https://estado-protocolo.emergent.host
+API=https://api.x39matrix.org
 ADMIN=<HWG_ADMIN_TOKEN de produccion>
 PK=$(cat mldsa87.pk)
 curl -s -X POST "$API/api/notaria/admin/cold_key" \
