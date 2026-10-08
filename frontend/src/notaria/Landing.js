@@ -183,7 +183,7 @@ export default function Landing() {
 
         <section style={{ marginBottom: 20 }} data-testid="landing-protect">
           <h2 className="nt-serif" style={{ fontSize: 26, fontWeight: 600, margin: '0 0 16px' }}>{t('protect.title')}</h2>
-          <div className="nt-steps" style={{ margin: 0 }}>
+          <div className="nt-steps nt-steps-2x2" style={{ margin: 0 }}>
             {[{ icon: Anchor, k: 'b1' }, { icon: Atom, k: 'b2' }, { icon: SearchCheck, k: 'b3' }, { icon: Clock, k: 'b4' }].map(({ icon: Icon, k }) => (
               <div className="nt-step" key={k}>
                 <Icon size={20} strokeWidth={1.5} color="var(--seal)" />
