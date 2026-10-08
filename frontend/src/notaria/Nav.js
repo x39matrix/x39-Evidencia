@@ -37,14 +37,19 @@ export const Nav = () => {
               {t('nav.login')}
             </button>
           )}
+          {/* 1024 px o más: barra de botones. Menos: desplegable nativo (notaria.css). */}
           <span className="nt-langbar" data-testid="lang-toggle-btn" role="group" aria-label="Language">
             {LANGS.map((l) => (
-              <button key={l.code} className={`nt-langflag ${lang === l.code ? 'on' : ''}`}
-                onClick={() => setLang(l.code)} data-testid={`lang-btn-${l.code}`} title={l.name || l.label}>
-                {l.flag ? <><span aria-hidden="true">{l.flag}</span> </> : null}<span className={l.flag ? 'nt-langlabel' : 'nt-langlabel nt-langlabel-solo'}>{l.label}</span>
+              <button key={l.code} className={`nt-langflag ${lang === l.code ? 'on' : ''}`} lang={l.code}
+                onClick={() => setLang(l.code)} data-testid={`lang-btn-${l.code}`} title={l.name}>
+                {l.name}
               </button>
             ))}
           </span>
+          <select className="nt-langselect" value={lang} onChange={(e) => setLang(e.target.value)}
+            aria-label="Language" data-testid="lang-select">
+            {LANGS.map((l) => <option key={l.code} value={l.code} lang={l.code}>{l.name}</option>)}
+          </select>
           <span className="nt-brand-mark" data-testid="nav-brand-mark">x39</span>
         </div>
       </div>

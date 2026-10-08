@@ -234,10 +234,14 @@ html, body { background: #1B1B1D; }
 }
 .nt-langflag + .nt-langflag { border-left: 1px solid var(--border); }
 .nt-langflag.on { background: var(--fg); color: var(--bg); }
-@media (max-width: 700px) {
-  .nt-langlabel { display: none; }
-  .nt-langlabel.nt-langlabel-solo { display: inline; }
-  .nt-langflag { padding: 8px 8px; font-size: 13px; }
+.nt-langselect {
+  display: none; font-family: var(--sans); font-size: 13px; font-weight: 700;
+  color: var(--fg); background: var(--surface); border: 1px solid var(--border);
+  border-radius: 999px; padding: 7px 10px; cursor: pointer; max-width: 9.5em;
+}
+@media (max-width: 1023px) {
+  .nt-langbar { display: none; }
+  .nt-langselect { display: inline-block; }
 }
 
 @media (max-width: 560px) {

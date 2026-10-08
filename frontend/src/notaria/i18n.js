@@ -1733,14 +1733,15 @@ const STRINGS = {
 const LangCtx = createContext(null);
 
 export const LANGS = [
-  { code: 'en', label: 'EN', flag: '🇬🇧' },
-  { code: 'es', label: 'ES', flag: '🇪🇸' },
-  // Sin bandera a propósito: ucranianos y rusos exiliados leen la misma web.
-  { code: 'uk', label: 'UA', name: 'Українська', flag: '' },
-  { code: 'ru', label: 'RU', name: 'Русский', flag: '' },
-  { code: 'zh', label: '中文', flag: '🇨🇳' },
-  { code: 'ja', label: '日本語', flag: '🇯🇵' },
-  { code: 'ar', label: 'العربية', flag: '🌐' },
+  // Sin banderas: cada idioma con su nombre en su propio alfabeto. Ucranianos y rusos
+  // exiliados leen la misma web.
+  { code: 'en', name: 'English' },
+  { code: 'es', name: 'Español' },
+  { code: 'uk', name: 'Українська' },
+  { code: 'ru', name: 'Русский' },
+  { code: 'zh', name: '中文' },
+  { code: 'ja', name: '日本語' },
+  { code: 'ar', name: 'العربية' },
 ];
 
 export function LangProvider({ children }) {
