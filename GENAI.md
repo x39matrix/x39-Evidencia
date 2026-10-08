@@ -21,4 +21,6 @@ This statement follows the NLnet generative AI policy (version 1.1).
 
 **Records.** The prompts and the outputs are kept.
 
+**Provenance.** The initial website was built on the Emergent platform, an AI-assisted application builder, and exported to a self-managed codebase on 18 August 2026; that export is the first commit of this repository. Subsequent development, maintenance and deployment are managed independently by the X-39 project with the two tools listed above.
+
 Author: X39matrix.

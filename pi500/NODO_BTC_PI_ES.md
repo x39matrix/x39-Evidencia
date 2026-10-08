@@ -6,7 +6,7 @@ El nodo Bitcoin es una SEGUNDA maquina, siempre online. Roles mutuamente excluye
 
 ```
 [Pi 500 - COLD]          [Pi 5 - NODO BTC]           [Servidor X-39]
- air-gapped               online 24/7                 Emergent (produccion)
+ air-gapped               online 24/7                 Pi 5 — api.x39matrix.org (produccion)
  clave ML-DSA-87          Bitcoin Core (pruned)       OTS stamp via calendarios
  co-firma offline         verifica sellos OTS         guarda proof.ots
  sneakernet (USB)         RPC local                   publica bundles
