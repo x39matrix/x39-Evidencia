@@ -1,7 +1,7 @@
 {
-  "name": "X-39 Vault",
-  "short_name": "X39 Vault",
-  "description": "Notaria soberana + chat cifrado + pago post-cuantico. Sella acuerdos en Bitcoin en 3 clicks.",
+  "name": "X-39 Evidencia",
+  "short_name": "X-39",
+  "description": "X-39 Evidencia: sellado de documentos anclado en Bitcoin, verificable sin confiar en nadie.",
   "start_url": "/",
   "display": "standalone",
   "orientation": "any",

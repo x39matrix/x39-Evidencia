@@ -20,7 +20,7 @@ export default function Certificado() {
   const share = async () => {
     const url = api.shareUrl(id);
     if (navigator.share) {
-      try { await navigator.share({ title: 'X-39 Notaría', url }); return; } catch { /* cancelled */ }
+      try { await navigator.share({ title: 'X-39 Evidencia', url }); return; } catch { /* cancelled */ }
     }
     navigator.clipboard.writeText(url).then(() => toast.success(t('cert.shareCopied')));
   };
@@ -45,7 +45,7 @@ export default function Certificado() {
       <main className="nt-wrap" style={{ padding: '40px 20px 80px' }}>
         <div className="nt-cert">
           <div className="nt-cert-head">
-            <div className="k">X-39 Notaría</div>
+            <div className="k">X-39 Evidencia</div>
             <h2>{t('landing.certTitle')}</h2>
             <div className="nt-note" style={{ fontStyle: 'italic' }}>{t('cert.sub')}</div>
           </div>
@@ -85,7 +85,7 @@ export default function Certificado() {
 
           <div className={`nt-seal-stamp ${anchored ? 'stamped' : ''}`}>
             <span className="big">{t('landing.sealedStamp')}</span>
-            <span className="sm">X-39 Notaría</span>
+            <span className="sm">X-39 Evidencia</span>
           </div>
         </div>
 

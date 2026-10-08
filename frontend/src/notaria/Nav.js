@@ -21,7 +21,7 @@ export const Nav = () => {
       <div className="nt-wrap nt-nav-inner">
         <Link to={user ? '/panel' : '/'} className="nt-brand" data-testid="nav-brand">
           <LockKeyhole size={26} strokeWidth={2} color="var(--brand)" aria-hidden="true" data-testid="nav-logo-img" />
-          X-39 Notaría
+          X-39 Evidencia
         </Link>
         <div className="nt-nav-links">
           <Link to="/verificar" className="nt-btn nt-btn-ghost" data-testid="nav-verify-link">{t('nav.verify')}</Link>
