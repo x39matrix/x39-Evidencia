@@ -40,8 +40,8 @@ export const Nav = () => {
           <span className="nt-langbar" data-testid="lang-toggle-btn" role="group" aria-label="Language">
             {LANGS.map((l) => (
               <button key={l.code} className={`nt-langflag ${lang === l.code ? 'on' : ''}`}
-                onClick={() => setLang(l.code)} data-testid={`lang-btn-${l.code}`} title={l.label}>
-                <span aria-hidden="true">{l.flag}</span> <span className="nt-langlabel">{l.label}</span>
+                onClick={() => setLang(l.code)} data-testid={`lang-btn-${l.code}`} title={l.name || l.label}>
+                {l.flag ? <><span aria-hidden="true">{l.flag}</span> </> : null}<span className={l.flag ? 'nt-langlabel' : 'nt-langlabel nt-langlabel-solo'}>{l.label}</span>
               </button>
             ))}
           </span>

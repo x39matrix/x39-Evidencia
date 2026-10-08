@@ -99,6 +99,7 @@ html, body { background: #1B1B1D; }
 
 .nt-steps { display: grid; grid-template-columns: 1fr; gap: 16px; margin: 8px 0 40px; }
 @media (min-width: 760px) { .nt-steps { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 760px) { .nt-steps.nt-steps-2x2 { grid-template-columns: repeat(2, 1fr); } }
 .nt-step { background: var(--grad); border: 1px solid var(--line); border-radius: 24px; padding: 24px; }
 .nt-step .n { font-family: var(--sans); font-weight: 700; font-size: 28px; color: var(--seal); line-height: 1; }
 .nt-step h3 { font-size: 15px; margin: 12px 0 6px; }
@@ -235,6 +236,7 @@ html, body { background: #1B1B1D; }
 .nt-langflag.on { background: var(--fg); color: var(--bg); }
 @media (max-width: 700px) {
   .nt-langlabel { display: none; }
+  .nt-langlabel.nt-langlabel-solo { display: inline; }
   .nt-langflag { padding: 8px 8px; font-size: 13px; }
 }
 
