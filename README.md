@@ -1,151 +1,80 @@
-# X-39 Notaría
+# X-39 Evidencia
 
-**Trustless agreement sealing anchored to Bitcoin. Post-quantum signed. End-to-end encrypted negotiation.**
+X-39 Evidencia is a proof-of-existence layer for documents.
+1. The SHA-256 of the file is computed on the user's device; the file itself never leaves it (on the web, text typed into the site is sent to the service, and the site says so).
+2. That hash is anchored in Bitcoin through OpenTimestamps; proofs verify against any Bitcoin node, and the reference deployment verifies them against our own full node.
+3. Where a legally recognised time is needed, the same hash receives an RFC 3161 qualified timestamp from ANF AC, a qualified trust service provider listed in the EU and Spanish trusted lists; the chain is verified with openssl against the ANF root, and the TSA certificate in that chain is cross-checked against the certificate registered in the Spanish trusted list.
+4. Proofs may carry an ML-DSA-87 (FIPS 204) co-signature produced on an air-gapped machine and verified against a published key fingerprint; it is optional, and its absence is reported, not hidden.
+5. Everything is verifiable with free tools and without trusting X-39. The code is AGPL-3.0. This is not a notary and not a qualified electronic signature.
 
-Two parties agree on something. X-39 seals the agreement so that its **existence, integrity, date and authorship** can be verified by anyone, forever, offline — without trusting X-39, any company, notary or state.
+## Verify it yourself
 
-*Versión en español más abajo.*
+These commands use the files of the Evidence Bundle v1. Run them from the bundle folder.
 
----
+**Requirements:**
+- Python 3 with `cryptography` and `pqcrypto` (ML-DSA-87);
+- OpenSSL;
+- the OpenTimestamps client (`pip install opentimestamps-client`) for the Bitcoin step.
 
-## Trust model (read this first)
+**1. Integrity of every file in the bundle.** `MANIFEST` lists the SHA-256 of every other file.
 
-| Property | How it is achieved | What the server can NOT do |
-|---|---|---|
-| Document privacy | SHA-256 computed **client-side** (Web Crypto). Only the hash reaches the server. | Read your document — it never leaves your device. |
-| Date proof | [OpenTimestamps](https://opentimestamps.org) anchor into a **Bitcoin block**. | Backdate or forge the timestamp — Bitcoin PoW seals it. |
-| Signature longevity | **ML-DSA-87** (NIST FIPS-204, category 5) co-signature over the canonical proof, produced on an **air-gapped machine**. | Forge proofs even with a future quantum computer — or even with full server compromise. |
-| Chat privacy | Post-quantum hybrid E2E: **X-Wing (ML-KEM-768 + X25519)** → HKDF → **AES-256-GCM** per message, in the browser. Legacy threads: ECDH P-256 (read-only). | Read the negotiation — it only ever stores ciphertext. |
-| Survivability | Self-contained evidence bundle (ZIP), verifiable **offline** with `verify_bundle.py`. | Destroy your evidence by disappearing — the proof outlives the service. |
-| Sovereign co-sign | **COLD** ML-DSA-87 co-signature produced on an **air-gapped Raspberry Pi** (see `pi500/`). Since 2026-07-16 this is the system's **only** post-quantum signing authority. | Sign as the operator even with full server compromise — the COLD key never touches a networked machine. |
-
-The status "anchored in Bitcoin" is shown **only** when `ots info` reports a
-`BitcoinBlockHeaderAttestation`. Pending means pending. The code never fabricates a proof.
-
-## Architecture
-
-```
-frontend/  React 19 (CRA + craco) · Tailwind · shadcn/ui
-  src/notaria/        Landing, Crear, Acuerdo (E2E chat), Verificar,
-                      VerificadorIndependiente, Certificado, api.js,
-                      e2e2.js (X-Wing PQ hybrid), e2e.js (legacy P-256)
-backend/   FastAPI · MongoDB (pymongo)
-  server.py           app assembly, CORS, /api/health
-  notaria.py          all routes: auth, agreements, E2E chat, sealing,
-                      OTS anchoring, public verification, evidence bundle,
-                      PDF certificate, COLD co-signature
-  hwg/crypto.py       async OpenTimestamps CLI wrappers (stamp / upgrade / info)
-pi500/     air-gapped COLD signer (pi500_cold_signer.py) + runbooks (ES)
-verify_bundle.py      standalone offline verifier for evidence bundles
+```sh
+sha256sum -c MANIFEST
 ```
 
-- Auth: Google OAuth (server-side session exchange, httpOnly cookie, CSRF token required for signing).
-- All API routes are prefixed `/api/notaria/*`.
-- Rate limiting: in-memory sliding window per IP+scope (single-process deployment).
+**2. The agreement proof, offline.** This checks the proof hash, the chat chain, the per-message Ed25519 signatures and the COLD ML-DSA-87 co-signature against the fingerprint pinned in `verify_bundle.py`. `--skip-ots` leaves out the Bitcoin step, and the output says so.
 
-## Sealing flow
-
-1. Party A writes the agreement (or hashes a file client-side) → `POST /agreements`.
-2. Party B joins via single-use invite link. Negotiation happens in the E2E chat.
-3. Both sign (`POST /agreements/{id}/sign`, CSRF-protected). On the second signature the server:
-   - freezes the chat and computes `chat_hash`,
-   - builds the canonical proof JSON (sorted keys, compact separators),
-   - stamps `proof_hash` with OpenTimestamps (async, multiple calendars).
-4. The operator co-signs the anchored payload **offline** on the air-gapped signer
-   (sneakernet; see `pi500/RUNBOOK_CEREMONIA_COLD.md` for the executed ceremony) and
-   uploads the signature — the server only verifies it against the pinned COLD pubkey.
-5. Anyone can verify: by hash (`POST /verify`), public page (`/p/{id}`), PDF certificate, or the downloadable evidence bundle.
-
-## Evidence bundle (`GET /api/notaria/proof/{id}.zip`)
-
-Deterministic ZIP (fixed timestamps → same sealed agreement, same bytes):
-
-| File | Content |
-|---|---|
-| `proof.json` | The **exact canonical bytes** that were signed and anchored |
-| `proof.json.ots` | OpenTimestamps proof (Bitcoin anchor) |
-| `signatures.json` | COLD sovereign ML-DSA-87 signature + public key (and historical WARM signatures on pre-2026-07-16 agreements) |
-| `README.md` | Step-by-step independent verification guide |
-
-Verify offline, zero trust:
-
-```bash
-pip install pqcrypto opentimestamps-client   # both optional, checks degrade gracefully
-python3 verify_bundle.py x39-evidencia-<id>.zip --document my_original.pdf
+```sh
+python3 verify_bundle.py 31e1cf09a5b2a74cd978.zip --skip-ots
 ```
 
-## Self-hosting
+Expected: `VALID (OTS omitido)`. Add `--content <original file>` to check that the sealed `content_hash` is your file.
 
-Requirements: Python 3.11+, Node 18+ (yarn), MongoDB, `ots` CLI (`pip install opentimestamps-client`).
+**3. The RFC 3161 qualified timestamp.** The `.cadena.pem` chain ends at the TSA certificate, not at the root. So `-CAfile` must be the ANF root and the chain goes in `-untrusted`:
 
-```bash
-# backend
-cd backend
-cp .env.example .env        # fill values; HWG_ADMIN_TOKEN gates COLD-key admin endpoints
-pip install -r requirements.txt
-uvicorn server:app --host 0.0.0.0 --port 8001
-
-# frontend
-cd frontend
-cp .env.example .env        # REACT_APP_BACKEND_URL = your public URL
-yarn && yarn start
+```sh
+D=2O-ACTA-DEL-PLENO-MUNICIPAL-EXTRAORDINARIO-PRESUPUESTO-2026-01-29.pdf
+openssl ts -reply -in "$D.tsr" -text
+openssl ts -verify -data "$D" -in "$D.tsr" -CAfile anf_root.pem -untrusted "$D.cadena.pem"
+openssl x509 -in anf_root.pem -noout -fingerprint -sha256
 ```
 
-Route `/api/*` to the backend and everything else to the frontend (any reverse proxy).
+Expected: `Verification: OK`. The root is ANF Global Root CA, SHA-256 `E0:AF:BD:2C:0E:E9:5A:68:CD:9A:3C:59:0B:2D:3F:E0:7C:0A:6D:0B:E7:96:AE:52:91:E4:24:D4:77:92:17:8E`. The Spanish trusted list registers the TSA service certificate (`AF:BC:8E:2D:54:6C:A7:49:9D:8A:81:04:A7:65:B0:0D:2A:30:F3:B0:27:53:94:D6:7A:8D:60:C0:3D:01:63:B5`), which travels in the chain and is issued by that root. You reach that list from the European Commission's list of trusted lists: <https://ec.europa.eu/tools/lotl/eu-lotl.xml>.
 
-## Air-gapped COLD co-signing
+**4. The Bitcoin anchor.**
 
-See `pi500/RUNBOOK_CEREMONIA_COLD.md` — the **executed** key ceremony (2026-07-16), including
-an honest key rotation after a lost passphrase — and `pi500/pi500_cold_signer.py`.
-Master key generated on a machine that has **never touched a network**; only the
-public key and signatures cross via USB. The server verifies, never signs COLD.
-`pi500/NODO_BTC_PI_ES.md` documents the planned sovereign Bitcoin-node verification.
+- With your own Bitcoin node, nothing depends on a third party. Use either of these:
 
-## Key retirement (SEC-003)
+  ```sh
+  ots verify "$D.ots"
+  python3 verify_bundle.py 31e1cf09a5b2a74cd978.zip --bitcoin-node http://user:pass@127.0.0.1:8332
+  ```
 
-On 2026-07-16 the server-side ("WARM") ML-DSA-87 signing key was **retired and deleted**
-once the air-gapped path was proven end-to-end. Historical WARM signatures remain
-verifiable (the public key is embedded per agreement). Since that date, no networked
-machine holds any signing authority in this system.
+- Without a node, upload the file and its `.ots` to <https://opentimestamps.org>. That check relies on that service.
+- `ots info` only reads the proof. It does not check it against Bitcoin.
 
-## Honest limitations
+## Links
 
-- The COLD co-signature requires a manual sneakernet round-trip per agreement (by design: no automation can touch the air-gapped key).
-- New E2E chat threads are post-quantum hybrid (X-Wing); threads created before the upgrade remain on legacy P-256 (read-only, no silent downgrade or upgrade).
-- E2E chat keys are per-browser (WebCrypto, non-extractable). A new device cannot decrypt old messages — by design.
-- eIDAS: advanced electronic signature material (art. 3(11)); **not** a qualified signature, **not** a substitute for a public notary.
-- Rate limiting is in-memory (resets on restart; adequate for single-instance deployment).
+- **Web:** <https://x39matrix.org>. Public verifier: <https://x39matrix.org/verificar>.
+- **Android app (X-39 Evidencia 0.3.3):** [Releases](https://github.com/x39matrix/x39-Evidencia/releases). Each release lists the APK SHA-256, the signing-certificate fingerprint, the qualified timestamp and the `.ots` proof.
+- **Evidence Bundle v1:** [release `bundle-v1`](https://github.com/x39matrix/x39-Evidencia/releases/tag/bundle-v1). The ZIP `x39-bundle-v1.zip` has SHA-256 `2c93b6c74071139f4201cfbd6012cc4391ebe8430cf7b2f7eced34cc7121a0ce`.
+- **Documentation and audits:** [`docs/`](docs/).
+- **Offline verifier:** [`verify_bundle.py`](verify_bundle.py).
+- **Air-gapped COLD signer and key ceremony:** [`pi500/`](pi500/).
+
+## Repository
+
+- `frontend/`: the web (React).
+- `backend/`: the API (FastAPI, MongoDB).
+- `pi500/`: the air-gapped ML-DSA-87 signer and its runbooks.
+- `verify_bundle.py`: the reference offline verifier.
+- `docs/`: audits and the independent verification record.
+- `deploy/`: deployment notes.
 
 ## License
 
-[AGPL-3.0](LICENSE). If you run a modified version as a service, you must publish your source. Verification must never depend on trusting an operator — including us.
+[AGPL-3.0](LICENSE). If you run a modified version as a service, you must publish its source.
 
----
+**Development transparency:** how generative AI is used in this project is described in [GENAI.md](GENAI.md).
 
-# X-39 Notaría (Español)
-
-**Sellado de acuerdos sin confianza, anclado en Bitcoin. Firmas post-cuánticas. Negociación cifrada extremo a extremo.**
-
-Dos partes acuerdan algo. X-39 lo sella de forma que su **existencia, integridad, fecha y autoría** sean verificables por cualquiera, para siempre, sin conexión — sin confiar en X-39, ni en ninguna empresa, notario o Estado.
-
-## Modelo de confianza
-
-- El documento **nunca se sube**: el SHA-256 se calcula en tu navegador.
-- "Anclado en Bitcoin" se muestra **solo** cuando OpenTimestamps confirma un `BitcoinBlockHeaderAttestation`. Pendiente significa pendiente.
-- La prueba se ancla en Bitcoin y se co-firma con **ML-DSA-87** (FIPS-204, post-cuántica) desde una clave **COLD** generada en una Raspberry Pi air-gapped (`pi500/`) — desde el 2026-07-16, la única autoridad de firma del sistema.
-- El chat es E2E post-cuántico híbrido (**X-Wing: ML-KEM-768 + X25519** → AES-256-GCM): el servidor solo almacena ciphertext. Hilos antiguos: P-256 (solo lectura).
-- El bundle de evidencia (ZIP) se verifica **offline** con `verify_bundle.py`: la prueba sobrevive al servicio.
-
-## Verificación independiente en 30 segundos
-
-```bash
-python3 verify_bundle.py x39-evidencia-<id>.zip --document mi_original.pdf
-```
-
-Comprueba: integridad (SHA-256), firma soberana ML-DSA-87 COLD (y WARM histórica si existe), ancla Bitcoin (OTS) y que el documento sellado es exactamente TU archivo — sin que salga de tu máquina.
-
-## Límites honestos
-
-Firma electrónica avanzada (eIDAS art. 3(11)); no es firma cualificada (QES) ni sustituye a un notario público. La clave WARM de servidor fue retirada y eliminada el 2026-07-16 (SEC-003): ninguna máquina conectada posee autoridad de firma.
-
-Licencia: **AGPL-3.0** — si despliegas una versión modificada como servicio, debes publicar tu código.
+Author: X39matrix.
