@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FileText, PenLine, Anchor, ShieldCheck, Users, Coins, Atom, SearchCheck, KeyRound } from 'lucide-react';
+import { FileText, PenLine, Anchor, ShieldCheck, Users, Coins, Atom, SearchCheck, KeyRound, Clock } from 'lucide-react';
 import { Nav } from './Nav';
 import { useAuth } from './NotariaApp';
 import { useLang } from './i18n';
@@ -110,7 +110,7 @@ export default function Landing() {
             onKeyDown={(e) => { if (e.key === 'Enter') navigate(`/certificado/${DEMO_CERT_ID}`); }}
             className="nt-hero-visual" style={{ display: 'block', color: 'inherit', cursor: 'pointer' }} data-testid="hero-demo-cert">
             <div style={{ textAlign: 'center', borderBottom: '1px solid var(--border)', paddingBottom: 16, marginBottom: 18 }}>
-              <div className="nt-label" style={{ marginBottom: 4 }}>X-39 Notaría</div>
+              <div className="nt-label" style={{ marginBottom: 4 }}>X-39 Evidencia</div>
               <div className="nt-serif" style={{ fontSize: 26, fontWeight: 600 }}>{t('landing.certTitle')}</div>
             </div>
             <div className="nt-label">{t('landing.certHashLabel')}</div>
@@ -144,7 +144,7 @@ export default function Landing() {
             )}
             <div className="nt-seal-stamp" style={{ width: 92, height: 92, marginTop: 16 }}>
               <span className="big">{t('landing.sealedStamp')}</span>
-              <span className="sm">X-39 Notaría</span>
+              <span className="sm">X-39 Evidencia</span>
             </div>
             {demoProof && (
               <div className="nt-note" style={{ textAlign: 'center', marginTop: 14, textDecoration: 'underline' }} data-testid="hero-cert-open">
@@ -184,7 +184,7 @@ export default function Landing() {
         <section style={{ marginBottom: 20 }} data-testid="landing-protect">
           <h2 className="nt-serif" style={{ fontSize: 26, fontWeight: 600, margin: '0 0 16px' }}>{t('protect.title')}</h2>
           <div className="nt-steps" style={{ margin: 0 }}>
-            {[{ icon: Anchor, k: 'b1' }, { icon: Atom, k: 'b2' }, { icon: SearchCheck, k: 'b3' }].map(({ icon: Icon, k }) => (
+            {[{ icon: Anchor, k: 'b1' }, { icon: Atom, k: 'b2' }, { icon: SearchCheck, k: 'b3' }, { icon: Clock, k: 'b4' }].map(({ icon: Icon, k }) => (
               <div className="nt-step" key={k}>
                 <Icon size={20} strokeWidth={1.5} color="var(--seal)" />
                 <h3>{t(`protect.${k}t`)}</h3>

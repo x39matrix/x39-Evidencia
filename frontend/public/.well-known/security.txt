@@ -1,5 +1,5 @@
-# X-39 Notaría — divulgación responsable de vulnerabilidades
-# X-39 Notaría — responsible vulnerability disclosure
+# X-39 Evidencia — divulgación responsable de vulnerabilidades
+# X-39 Evidencia — responsible vulnerability disclosure
 #
 # Proyecto de código abierto (AGPL-3.0) mantenido por una sola persona.
 # Si encuentras un fallo de seguridad, escribe antes de hacerlo público:
