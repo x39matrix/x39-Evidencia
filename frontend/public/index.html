@@ -4,7 +4,7 @@
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content="#CC0000" />
-        <meta name="description" content="X-39 Notaría — Agreements sealed on Bitcoin. Cryptographic proof of content and date via OpenTimestamps. Free, verifiable by anyone, forever." />
+        <meta name="description" content="X-39 Evidencia — Agreements sealed on Bitcoin. Cryptographic proof of content and date via OpenTimestamps. Free, verifiable by anyone, forever." />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="X-39MATRIX" />
@@ -12,7 +12,7 @@
         <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
         <link rel="icon" href="%PUBLIC_URL%/x39_icon_192.png" />
         <link rel="apple-touch-startup-image" href="%PUBLIC_URL%/apple_splash_1170x2532.png" />
-        <meta property="og:title" content="X-39 Notaría — Agreements sealed on Bitcoin" />
+        <meta property="og:title" content="X-39 Evidencia — Agreements sealed on Bitcoin" />
         <meta property="og:description" content="Two people, one agreement, a mathematical proof anchored in Bitcoin. Free, verifiable by anyone, forever. Post-quantum ML-DSA-87 signatures." />
         <meta property="og:image" content="https://x39matrix.org/og_notaria.jpg" />
         <meta property="og:image:width" content="1264" />
@@ -20,7 +20,7 @@
         <meta property="og:url" content="https://x39matrix.org/" />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="X-39 Notaría — Agreements sealed on Bitcoin" />
+        <meta name="twitter:title" content="X-39 Evidencia — Agreements sealed on Bitcoin" />
         <meta name="twitter:image" content="https://x39matrix.org/og_notaria.jpg" />
         <!--
         manifest.json provides metadata used when your web app is installed on a
@@ -35,10 +35,17 @@
         work correctly both with client-side routing and a non-root public URL.
         Learn how to configure a non-root public URL by running `npm run build`.
         -->
-        <title>X-39 Notaría — Agreements sealed on Bitcoin</title>
+        <title>X-39 Evidencia — Agreements sealed on Bitcoin</title>
     </head>
     <body>
-        <noscript>You need to enable JavaScript to run this app.</noscript>
+        <noscript>
+          <div style="font-family:sans-serif;max-width:720px;margin:2em auto;padding:0 1em;line-height:1.5">
+            <h1>X-39 Evidencia</h1>
+            <p>Sellado de documentos anclado a Bitcoin con criptografía post-cuántica (ML-DSA-87, FIPS 204). Gratis, sin custodia, sin token. Verificable sin conexión con <code>verify_bundle.py</code>. Demostración pública: <a href="https://sevilla.x39matrix.org">sevilla.x39matrix.org</a></p>
+            <p>Document sealing anchored to Bitcoin with post-quantum cryptography (ML-DSA-87, FIPS 204). Free, no custody, no token. Verifiable offline with <code>verify_bundle.py</code>. Public demo: <a href="https://sevilla.x39matrix.org">sevilla.x39matrix.org</a></p>
+            <p>Esta web necesita JavaScript para la parte interactiva. / This site needs JavaScript for the interactive part.</p>
+          </div>
+        </noscript>
         <div id="root"></div>
         <!--
       This HTML file is a template.
