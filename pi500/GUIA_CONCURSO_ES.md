@@ -1,7 +1,7 @@
 # X-39 Notaría — Guía completa del flujo COLD con Raspberry Pi 500
 
 Documento para leer HOY, antes de que llegue el Pi. Todo lo necesario para la clave
-soberana air-gapped ML-DSA-87. Producción: https://estado-protocolo.emergent.host
+soberana air-gapped ML-DSA-87. Producción: https://api.x39matrix.org
 
 ====================================================================
 QUÉ ES ESTO Y POR QUÉ
@@ -82,7 +82,7 @@ Opción A (recomendada, sin exponer el token):
     El agente lo registra en producción con el token del servidor (nunca se expone).
 
 Opción B (tú mismo, si tienes el HWG_ADMIN_TOKEN de producción):
-    API=https://estado-protocolo.emergent.host
+    API=https://api.x39matrix.org
     ADMIN=<HWG_ADMIN_TOKEN>
     PK=$(cat mldsa87.pk)
     curl -s -X POST "$API/api/notaria/admin/cold_key" \

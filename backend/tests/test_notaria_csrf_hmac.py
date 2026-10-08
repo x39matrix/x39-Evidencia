@@ -295,7 +295,7 @@ class TestHistorical:
 
 class TestCookieSameSite:
     def test_lax_cookie_on_auth_session(self):
-        # We can't do a full session_id exchange (no real Emergent session_id), but we can hit
+        # We can't do a full session_id exchange (no real session_id), but we can hit
         # auth/logout which sets the cookie deletion. Instead, check /auth/me works via Bearer only.
         # For SameSite proof, inspect the /auth/session set-cookie via an invalid session_id which
         # returns 401 without cookie; safest is to verify the source declares samesite="lax".

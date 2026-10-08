@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# check.sh — estado de X-39 Notaría API en la Pi 5. Uso: bash deploy/pi5/check.sh
+# check.sh — estado de X-39 Evidencia API en la Pi 5. Uso: bash deploy/pi5/check.sh
 # Verifica lo tocado o afirmado en la auditoría del 01/09/2026. Gasta el cupo de verify 60 s.
 set -u
 H=api.x39matrix.org; R="--resolve $H:443:127.0.0.1"; B="https://$H"
@@ -31,7 +31,6 @@ L=$(sudo ss -tlnH | awk '{print $4}' | grep ':27017$'); echo "$L" | grep -q '^12
 grep -q -- '--proxy-headers --forwarded-allow-ips=127.0.0.1' /etc/systemd/system/x39-api.service; t $? "uvicorn con --proxy-headers"
 grep -q 'docs_url=None' /opt/x39/api/backend/server.py; t $? "docs apagados tambien en FastAPI"
 [ -z "$(sudo -u x39api git -C /opt/x39/api status --short)" ]; t $? "repositorio limpio"
-[ "$(curl -s --max-time 15 -o /dev/null -w '%{http_code}' https://estado-protocolo.emergent.host/api/health)" != 200 ]; t $? "Emergent apagado (health distinto de 200)"
 c=0; for i in $(seq 1 24); do [ "$(code -X POST -H 'Content-Type: application/json' -d '{"hash":"00"}' $B/api/notaria/verify)" = 429 ] && c=$((c+1)); done
 [ "$c" -ge 1 ]; t $? "limite por IP en verify (429 vistos: $c)"
 echo "== $pass PASS / $fail FAIL =="
