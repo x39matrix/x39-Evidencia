@@ -45,7 +45,7 @@ export default function Acuerdo() {
   const canSignRef = useRef(false);
   const chatEndRef = useRef(null);
   const sealed = ag?.status === 'sealed';
-  const locale = { es: 'es-ES', en: 'en-GB', zh: 'zh-CN', ja: 'ja-JP' }[lang] || 'es-ES';
+  const locale = { es: 'es-ES', en: 'en-GB', zh: 'zh-CN', ja: 'ja-JP', uk: 'en-GB', ru: 'en-GB' }[lang] || 'es-ES';
 
   const load = useCallback(async () => {
     try {
