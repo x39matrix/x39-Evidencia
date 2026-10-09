@@ -289,6 +289,9 @@ const STRINGS = {
     'appe.toComms': 'X-39 Comunicaciones (app aparte) →',
     'appe.back': '← Volver a X-39 Evidencia',
     'footer.app': 'App Android',
+    'landing.commsT': 'App hermana: X-39 Comunicaciones',
+    'landing.commsBody': 'Del mismo proyecto: llamadas, videollamadas y mensajes cifrados entre dos teléfonos, con clave de llamada post-cuántica. En beta cerrada por invitación; el código y la descarga pública llegan en noviembre de 2026.',
+    'landing.commsLink': 'Saber más y pedir acceso →',
   },
   en: {
     'nav.verify': 'Verify',
@@ -578,6 +581,9 @@ const STRINGS = {
     'appe.toComms': 'X-39 Comunicaciones (separate app) →',
     'appe.back': '← Back to X-39 Evidencia',
     'footer.app': 'Android app',
+    'landing.commsT': 'Companion app: X-39 Comunicaciones',
+    'landing.commsBody': 'From the same project: encrypted calls, video calls and messages between two phones, with a post-quantum call key. In closed beta by invitation; the code and the public download arrive in November 2026.',
+    'landing.commsLink': 'Learn more and request access →',
   },
   zh: {
     'nav.verify': '验证',
@@ -861,6 +867,9 @@ const STRINGS = {
     'appe.toComms': 'X-39 Comunicaciones（另一款应用）→',
     'appe.back': '← 返回 X-39 Evidencia',
     'footer.app': 'Android 应用',
+    'landing.commsT': '姊妹应用：X-39 Comunicaciones',
+    'landing.commsBody': '出自同一项目：两部手机之间的加密通话、视频通话和消息，采用抗量子的通话密钥。目前为受邀封闭测试；代码和公开下载将于 2026 年 11 月推出。',
+    'landing.commsLink': '了解更多并申请访问 →',
   },
   ja: {
     'nav.verify': '検証',
@@ -1144,6 +1153,9 @@ const STRINGS = {
     'appe.toComms': 'X-39 Comunicaciones（別アプリ）→',
     'appe.back': '← X-39 Evidencia に戻る',
     'footer.app': 'Android アプリ',
+    'landing.commsT': '姉妹アプリ：X-39 Comunicaciones',
+    'landing.commsBody': '同じプロジェクトによるもの：2台のスマートフォン間の暗号化された通話、ビデオ通話、メッセージ。通話鍵は耐量子です。現在は招待制のクローズドベータ。コードと一般向けダウンロードは 2026年11月に公開されます。',
+    'landing.commsLink': '詳しく見てアクセスを申請 →',
   },
   ar: {
     'nav.verify': 'تحقّق',
@@ -1434,6 +1446,9 @@ const STRINGS = {
     'appe.toComms': 'X-39 Comunicaciones (تطبيق منفصل) ←',
     'appe.back': '→ العودة إلى X-39 Evidencia',
     'footer.app': 'تطبيق Android',
+    'landing.commsT': 'تطبيق شقيق: X-39 Comunicaciones',
+    'landing.commsBody': 'من المشروع نفسه: مكالمات ومكالمات فيديو ورسائل مشفّرة بين هاتفين، بمفتاح مكالمة مقاوم للحوسبة الكمية. في نسخة تجريبية مغلقة بالدعوة؛ يصل الكود والتنزيل العام في نوفمبر 2026.',
+    'landing.commsLink': 'اعرف المزيد واطلب الوصول ←',
   },
   uk: {
     'nav.verify': 'Перевірити',
@@ -1717,6 +1732,9 @@ const STRINGS = {
     'appe.toComms': 'X-39 Comunicaciones (окремий застосунок) →',
     'appe.back': '← Повернутися до X-39 Evidencia',
     'footer.app': 'Застосунок Android',
+    'landing.commsT': 'Застосунок-побратим: X-39 Comunicaciones',
+    'landing.commsBody': 'Від того самого проєкту: зашифровані дзвінки, відеодзвінки та повідомлення між двома телефонами, з постквантовим ключем дзвінка. У закритій беті за запрошенням; код і публічне завантаження з’являться в листопаді 2026 року.',
+    'landing.commsLink': 'Дізнатися більше й попросити доступ →',
   },
   ru: {
     'nav.verify': 'Проверить',
@@ -2000,6 +2018,9 @@ const STRINGS = {
     'appe.toComms': 'X-39 Comunicaciones (отдельное приложение) →',
     'appe.back': '← Вернуться к X-39 Evidencia',
     'footer.app': 'Приложение Android',
+    'landing.commsT': 'Приложение-спутник: X-39 Comunicaciones',
+    'landing.commsBody': 'От того же проекта: зашифрованные звонки, видеозвонки и сообщения между двумя телефонами, с постквантовым ключом звонка. В закрытой бете по приглашению; код и публичная загрузка появятся в ноябре 2026 года.',
+    'landing.commsLink': 'Узнать больше и запросить доступ →',
   },
 };
 
