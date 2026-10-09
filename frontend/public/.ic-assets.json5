@@ -14,5 +14,6 @@
     }
   },
   { "match": "static/**/*", "headers": { "Cache-Control": "public, max-age=31536000, immutable" } },
-  { "match": "index.html", "headers": { "Cache-Control": "no-cache" } }
+  { "match": "index.html", "headers": { "Cache-Control": "no-cache" } },
+  { "match": "app/*.apk", "headers": { "Content-Type": "application/vnd.android.package-archive", "Content-Disposition": "attachment", "Cache-Control": "no-cache" } }
 ]

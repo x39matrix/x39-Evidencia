@@ -8,6 +8,13 @@ const P = { fontSize: 14, lineHeight: 1.6, margin: '0 0 12px' };
 const H2 = { fontSize: 20, fontWeight: 600, margin: '24px 0 10px' };
 const A = { color: 'var(--seal)', textDecoration: 'underline' };
 
+// En el texto traducido, [[...]] marca la expresión que enlaza a la página de la app de Evidencia (/app).
+function conEnlaceApp(texto) {
+  const m = /^(.*)\[\[(.+?)\]\](.*)$/s.exec(texto);
+  if (!m) return texto;
+  return <>{m[1]}<Link to="/app" style={A} data-testid="comms-to-app">{m[2]}</Link>{m[3]}</>;
+}
+
 export default function Comunicaciones() {
   const { t } = useLang();
   const section = (title, keys) => (
@@ -31,7 +38,8 @@ export default function Comunicaciones() {
             {t('comms.statusMail')}{' '}
             <a href="mailto:grants@x39matrix.org" style={A} data-testid="comms-mail">grants@x39matrix.org</a>
           </p>
-          {section('comms.dlT', ['comms.dl1'])}
+          <h2 className="nt-serif" style={H2}>{t('comms.dlT')}</h2>
+          <p className="nt-note" style={P}>{conEnlaceApp(t('comms.dl1'))}</p>
           {section('comms.whyT', ['comms.why1'])}
           {section('comms.limitsT', ['comms.limits1'])}
           <p style={{ margin: '28px 0 0' }}>
