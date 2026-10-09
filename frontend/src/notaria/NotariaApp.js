@@ -30,6 +30,7 @@ import Verificar from './Verificar';
 import Certificado from './Certificado';
 import Entrar from './Entrar';
 import Privacidad from './Privacidad';
+import Comunicaciones from './Comunicaciones';
 const AuthCtx = createContext(null);
 export const useAuth = () => useContext(AuthCtx);
 function Protected({ children }) {
@@ -86,6 +87,7 @@ function NotariaInner() {
           <Route path="/verificar" element={<Verificar />} />
           <Route path="/certificado/:id" element={<Certificado />} />
           <Route path="/privacidad" element={<Privacidad />} />
+          <Route path="/comunicaciones" element={<Comunicaciones />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>

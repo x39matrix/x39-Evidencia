@@ -234,7 +234,7 @@ export default function Landing() {
             <div>
               <h2 className="nt-serif" style={{ fontSize: 22, margin: '0 0 8px', fontWeight: 600 }}>{t('landing.honestyTitle')}</h2>
               <p className="nt-note" style={{ fontSize: 14, maxWidth: '70ch', margin: 0 }}>{t('landing.honestyBody')}</p>
-              <a href="https://github.com/x39matrix/x39-notaria" target="_blank" rel="noreferrer" style={{ display: 'inline-block', marginTop: 10, fontSize: 14, color: 'var(--seal)', textDecoration: 'underline' }} data-testid="landing-github-link">{t('landing.codeLink')}</a>
+              <a href="https://github.com/x39matrix/x39-Evidencia" target="_blank" rel="noreferrer" style={{ display: 'inline-block', marginTop: 10, fontSize: 14, color: 'var(--seal)', textDecoration: 'underline' }} data-testid="landing-github-link">{t('landing.codeLink')}</a>
             </div>
           </div>
         </section>
@@ -243,9 +243,10 @@ export default function Landing() {
         <div className="nt-wrap" style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
           <span className="nt-note">{t('landing.footer')}</span>
           <span className="nt-note nt-mono" style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-            <a href="https://github.com/x39matrix/x39-notaria" target="_blank" rel="noreferrer" style={{ color: 'var(--fg)', textDecoration: 'underline' }} data-testid="footer-github">{t('footer.github')}</a>
+            <a href="https://github.com/x39matrix/x39-Evidencia" target="_blank" rel="noreferrer" style={{ color: 'var(--fg)', textDecoration: 'underline' }} data-testid="footer-github">{t('footer.github')}</a>
             <a href="mailto:grants@x39matrix.org" style={{ color: 'var(--fg)', textDecoration: 'underline' }} data-testid="footer-contact">{t('footer.contact')}</a>
             <Link to="/privacidad" style={{ color: 'var(--fg)', textDecoration: 'underline' }} data-testid="footer-privacy">{t('footer.privacy')}</Link>
+            <Link to="/comunicaciones" style={{ color: 'var(--fg)', textDecoration: 'underline' }} data-testid="footer-comms">{t('footer.comms')}</Link>
             <span>OpenTimestamps · SHA-256 · ML-DSA-87</span>
           </span>
         </div>
