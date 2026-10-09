@@ -9,3 +9,5 @@ backend/hwg/ots_cache/
 .env
 frontend/.env
 backend/.env
+# binarios del release; la copia canónica es el release de GitHub; copiar aquí antes de compilar
+frontend/public/app/
