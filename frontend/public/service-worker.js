@@ -21,12 +21,20 @@ self.addEventListener('fetch', event => {
     event.respondWith(fetch(event.request));
     return;
   }
+  // /app/ (APK y ficheros de verificación del release): directo a la red, nunca cache.
+  if (new URL(url).pathname.startsWith('/app/')) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
   // Navegaciones (index.html): red primero; cache solo sin red.
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request).then(res => {
-        const copy = res.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put('/index.html', copy));
+        // Solo se guarda como /index.html lo que de verdad es HTML.
+        if ((res.headers.get('Content-Type') || '').includes('text/html')) {
+          const copy = res.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put('/index.html', copy));
+        }
         return res;
       }).catch(() => caches.match('/index.html'))
     );
