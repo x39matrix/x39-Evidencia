@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FileText, PenLine, Anchor, ShieldCheck, Users, Coins, Atom, SearchCheck, KeyRound, Clock } from 'lucide-react';
+import { FileText, PenLine, Anchor, ShieldCheck, Users, Coins, Atom, SearchCheck, KeyRound, Clock, MessageCircle } from 'lucide-react';
 import { Nav } from './Nav';
 import { useAuth } from './NotariaApp';
 import { useLang } from './i18n';
@@ -235,6 +235,17 @@ export default function Landing() {
               <h2 className="nt-serif" style={{ fontSize: 22, margin: '0 0 8px', fontWeight: 600 }}>{t('landing.honestyTitle')}</h2>
               <p className="nt-note" style={{ fontSize: 14, maxWidth: '70ch', margin: 0 }}>{t('landing.honestyBody')}</p>
               <a href="https://github.com/x39matrix/x39-Evidencia" target="_blank" rel="noreferrer" style={{ display: 'inline-block', marginTop: 10, fontSize: 14, color: 'var(--seal)', textDecoration: 'underline' }} data-testid="landing-github-link">{t('landing.codeLink')}</a>
+            </div>
+          </div>
+        </section>
+
+        <section className="nt-card nt-card-pad" style={{ marginBottom: 64 }} data-testid="landing-comms">
+          <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+            <MessageCircle size={22} strokeWidth={1.5} color="var(--seal)" style={{ flexShrink: 0, marginTop: 2 }} />
+            <div>
+              <h2 className="nt-serif" style={{ fontSize: 22, margin: '0 0 8px', fontWeight: 600 }}>{t('landing.commsT')}</h2>
+              <p className="nt-note" style={{ fontSize: 14, maxWidth: '70ch', margin: 0 }}>{t('landing.commsBody')}</p>
+              <Link to="/comunicaciones" style={{ display: 'inline-block', marginTop: 10, fontSize: 14, color: 'var(--seal)', textDecoration: 'underline' }} data-testid="landing-comms-link">{t('landing.commsLink')}</Link>
             </div>
           </div>
         </section>
