@@ -36,7 +36,7 @@ export default function Comunicaciones() {
           {section('comms.statusT', ['comms.status1'])}
           <p className="nt-note" style={P}>
             {t('comms.statusMail')}{' '}
-            <a href="mailto:grants@x39matrix.org" style={A} data-testid="comms-mail">grants@x39matrix.org</a>
+            <a href="mailto:security@x39matrix.org" style={A} data-testid="comms-mail">security@x39matrix.org</a>
           </p>
           <h2 className="nt-serif" style={H2}>{t('comms.dlT')}</h2>
           <p className="nt-note" style={P}>{conEnlaceApp(t('comms.dl1'))}</p>
