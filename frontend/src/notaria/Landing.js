@@ -255,7 +255,7 @@ export default function Landing() {
           <span className="nt-note">{t('landing.footer')}</span>
           <span className="nt-note nt-mono" style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
             <a href="https://github.com/x39matrix/x39-Evidencia" target="_blank" rel="noreferrer" style={{ color: 'var(--fg)', textDecoration: 'underline' }} data-testid="footer-github">{t('footer.github')}</a>
-            <a href="mailto:grants@x39matrix.org" style={{ color: 'var(--fg)', textDecoration: 'underline' }} data-testid="footer-contact">{t('footer.contact')}</a>
+            <a href="mailto:security@x39matrix.org" style={{ color: 'var(--fg)', textDecoration: 'underline' }} data-testid="footer-contact">{t('footer.contact')}</a>
             <Link to="/privacidad" style={{ color: 'var(--fg)', textDecoration: 'underline' }} data-testid="footer-privacy">{t('footer.privacy')}</Link>
             <Link to="/app" style={{ color: 'var(--fg)', textDecoration: 'underline' }} data-testid="footer-app">{t('footer.app')}</Link>
             <Link to="/comunicaciones" style={{ color: 'var(--fg)', textDecoration: 'underline' }} data-testid="footer-comms">{t('footer.comms')}</Link>
