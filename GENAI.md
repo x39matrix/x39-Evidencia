@@ -1,26 +1,28 @@
-# Use of generative AI
+# Use of generative artificial intelligence
 
-This statement follows the NLnet generative AI policy (version 1.1).
+I am the creator of and the person responsible for X39Matrix, an independent technology project that I develop and manage personally.
 
-**Tools.** Two tools are used, and no others:
-- **Claude** (Anthropic): Claude Code in the development environment, and the Claude app for coordination.
-- **Codex** (OpenAI).
+The decisions about its design, architecture, security and evolution are mine. I integrate the components, carry out the testing, verify the results and manage the releases.
 
-**What they are used for:**
-- drafting and translating texts;
-- generating code, which the author reviews and tests;
-- running tests and independent reproductions of results.
+## Use of AI tools
 
-**How it is governed:**
-- The human author decides the scope and the rules of each task.
-- The author tests on real devices, deploys, and checks every output.
-- Nothing a tool claims is taken as done until there is real output: a command that has only been written down does not count until it has been run and its result has been seen.
-- Deployments, releases and signing keys stay in the author's hands.
+I currently use artificial intelligence tools to support translation, proofreading and text drafting, especially in English, as it is not my native language.
 
-**Marking.** From now on, commits that contain generated code or text state the model and version used and a summary of the prompts.
+I also use these tools to organise and improve technical documentation based on my own ideas, knowledge and instructions.
 
-**Records.** The prompts and the outputs are kept.
+In earlier stages of the project, I also used these tools to assist with certain programming and testing tasks. I reviewed and integrated the results and remain responsible for their operation.
 
-**Provenance.** The initial website was built on the Emergent platform, an AI-assisted application builder, and exported to a self-managed codebase on 18 August 2026; that export is the first commit of this repository. Subsequent development, maintenance and deployment are managed independently by the X-39 project with the two tools listed above.
+## Transparency
 
-Author: X39matrix.
+I maintain traceability of AI-assisted contributions and preserve the corresponding records.
+
+The first version of the website was created using an AI-assisted development platform and exported on 18 August 2026 to a repository under my independent management.
+
+## My commitment
+
+My purpose is to develop open, verifiable and useful technology.
+
+I do not ask anyone to take my word for it. I want anyone to be able to examine the code, verify the evidence and reproduce the results.
+
+**X39matrix**
+Independent creator and developer
