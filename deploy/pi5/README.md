@@ -2,10 +2,12 @@
 
 - **Código**: `/opt/x39/api` (checkout git, rama `textos-honestos`, propietario `x39api`). Commits en la Pi con `sudo -u x39api git …`; traer a WSL con `git pull --rebase x39pi@192.168.1.46:/opt/x39/api textos-honestos`.
 - **Servicio**: `x39-api.service` (copia en esta carpeta). uvicorn en 127.0.0.1:8000 con `--proxy-headers --forwarded-allow-ips=127.0.0.1`. Secretos en `/etc/x39/api.env` (root:x39api, 640).
-- **Proxy**: Caddy nativo, `/etc/caddy/Caddyfile` (copia aquí). Oculta /docs, /redoc y /openapi.json; `/api/notaria/admin/*` solo desde localhost; tope de cuerpo 20 MB; sin cabecera Server; sobrescribe X-Forwarded-For con la IP real.
+- **Proxy**: Caddy nativo, `/etc/caddy/Caddyfile` (copia aquí). Oculta /docs, /redoc y /openapi.json; `/api/notaria/admin/*` solo desde localhost; tope de cuerpo 20 MB; sin cabecera Server. Los logs de acceso están desactivados. X-Forwarded-For solo se entrega a Uvicorn por loopback para limitar peticiones por IP en memoria; no se guarda en los documentos de Mongo.
 - **Mongo**: contenedor `x39-mongo` (mongo:7) publicado solo en 127.0.0.1:27017.
 - **Límites por IP**: slowapi (`backend/ratelimit.py`). `headers_enabled` debe seguir desactivado.
 - **Dependencias**: `backend/requirements-min.txt` (lista curada) → `backend/requirements.txt` (freeze fijado). `pqcrypto` y `opentimestamps-client` NO se actualizan sin decisión expresa: son cadena de verificación.
+
+La política de registro y retención está en [`POLITICA_RETENCION.md`](POLITICA_RETENCION.md).
 
 ## Autoexamen al arranque
 El servidor aborta si la clave COLD registrada en Mongo no coincide con `COLD_FP_PINNED` (`backend/notaria.py`). Comprobar `[COLD] OK` en `journalctl -u x39-api`.
