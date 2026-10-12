@@ -4,7 +4,7 @@
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content="#CC0000" />
-        <meta name="description" content="X-39 Evidencia — Agreements sealed on Bitcoin. Cryptographic proof of content and date via OpenTimestamps, with an optional post-quantum ML-DSA-87 co-signature. Free, verifiable by anyone." />
+        <meta name="description" content="Fingerprint and date of your files anchored in Bitcoin via OpenTimestamps. Open-source Android app (AGPL-3.0), verifiable by anyone without relying on us." />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="X-39MATRIX" />
@@ -12,16 +12,16 @@
         <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
         <link rel="icon" href="%PUBLIC_URL%/x39_icon_192.png" />
         <link rel="apple-touch-startup-image" href="%PUBLIC_URL%/apple_splash_1170x2532.png" />
-        <meta property="og:title" content="X-39 Evidencia — Agreements sealed on Bitcoin" />
-        <meta property="og:description" content="Two people, one agreement, a mathematical proof anchored in Bitcoin. Free and verifiable by anyone. Optional post-quantum ML-DSA-87 co-signature." />
-        <meta property="og:image" content="https://x39matrix.org/og_notaria.jpg" />
-        <meta property="og:image:width" content="1264" />
-        <meta property="og:image:height" content="848" />
+        <meta property="og:title" content="X-39 Evidencia — Proof of existence anchored in Bitcoin" />
+        <meta property="og:description" content="Fingerprint and date of your files anchored in Bitcoin via OpenTimestamps. Open-source Android app (AGPL-3.0), verifiable by anyone without relying on us." />
+        <meta property="og:image" content="https://x39matrix.org/og_x39_evidencia.jpg" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
         <meta property="og:url" content="https://x39matrix.org/" />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="X-39 Evidencia — Agreements sealed on Bitcoin" />
-        <meta name="twitter:image" content="https://x39matrix.org/og_notaria.jpg" />
+        <meta name="twitter:title" content="X-39 Evidencia — Proof of existence anchored in Bitcoin" />
+        <meta name="twitter:image" content="https://x39matrix.org/og_x39_evidencia.jpg" />
         <!--
         manifest.json provides metadata used when your web app is installed on a
         user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
@@ -35,14 +35,24 @@
         work correctly both with client-side routing and a non-root public URL.
         Learn how to configure a non-root public URL by running `npm run build`.
         -->
-        <title>X-39 Evidencia — Agreements sealed on Bitcoin</title>
+        <title>X-39 Evidencia — Proof of existence anchored in Bitcoin</title>
     </head>
     <body>
         <noscript>
           <div style="font-family:sans-serif;max-width:720px;margin:2em auto;padding:0 1em;line-height:1.5">
             <h1>X-39 Evidencia</h1>
-            <p>Sellado de documentos anclado a Bitcoin con criptografía post-cuántica (ML-DSA-87, FIPS 204). Gratis, sin custodia, sin token. Verificable sin conexión con <code>verify_bundle.py</code>. Demostración pública: <a href="https://sevilla.x39matrix.org">sevilla.x39matrix.org</a></p>
-            <p>Document sealing anchored to Bitcoin with post-quantum cryptography (ML-DSA-87, FIPS 204). Free, no custody, no token. Verifiable offline with <code>verify_bundle.py</code>. Public demo: <a href="https://sevilla.x39matrix.org">sevilla.x39matrix.org</a></p>
+            <p>Pruebas de existencia ancladas en Bitcoin (OpenTimestamps), con sello de tiempo cualificado RFC 3161 de ANF en los paquetes publicados. Código abierto, AGPL-3.0.<br />
+            Proof of existence anchored in Bitcoin (OpenTimestamps), with an ANF RFC 3161 qualified timestamp on the published packages. Open source, AGPL-3.0.</p>
+            <ul>
+              <li>App Android / Android app: <a href="/app/x39-0.3.3-release.apk">x39-0.3.3-release.apk</a> · <a href="/app/x39-0.3.3-release.apk.sha256">SHA-256</a> · <a href="/app/x39-0.3.3-release.apk.ots">.ots</a> · <a href="/app/x39-0.3.3-release.apk.tsr">.tsr</a> · <a href="/app/x39-0.3.3-release.apk.cadena.pem">.cadena.pem</a> · <a href="/app/anf_root.pem">anf_root.pem</a><br />
+                <code>APK SHA-256 4c5c3a321a97f8bb45a83b5f8c878d27608b23499921df52fa079212ef330f03</code><br />
+                <code>cert SHA-256 72f0745f993605b1b3cd30966162b6d98d84fcacbd23e2e07e24c3d15f7d8935</code></li>
+              <li>Código / Source (AGPL-3.0): <a href="https://github.com/x39matrix/x39-Evidencia">https://github.com/x39matrix/x39-Evidencia</a></li>
+              <li>Evidence Bundle v1.1 (ZIP, .ots, .tsr, VALID): <a href="https://github.com/x39matrix/x39-Evidencia/releases/tag/bundle-v1.1">https://github.com/x39matrix/x39-Evidencia/releases/tag/bundle-v1.1</a></li>
+              <li>Verificador / Verifier: <a href="https://github.com/x39matrix/x39-Evidencia/blob/bundle-v1.1/verify_bundle_v1_1.py">verify_bundle_v1_1.py</a> (bundle v1.1) · <a href="/verify_bundle.py">verify_bundle.py</a> (general)</li>
+              <li>40 documentos de Sevilla / 40 Seville documents: <a href="https://sevilla.x39matrix.org">sevilla.x39matrix.org</a></li>
+            </ul>
+            <p>Qué no prueba: autoría ni veracidad del contenido. / What it does not prove: authorship, or that the content is true.</p>
             <p>Esta web necesita JavaScript para la parte interactiva. / This site needs JavaScript for the interactive part.</p>
           </div>
         </noscript>
