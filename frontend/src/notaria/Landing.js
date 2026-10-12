@@ -7,7 +7,14 @@ import { useLang } from './i18n';
 import { api, goLogin } from './api';
 
 const DEMO_CERT_ID = '31e1cf09a5b2a74cd978';
+const REPO = 'https://github.com/x39matrix/x39-Evidencia';
+const BUNDLE_TAG = 'bundle-v1.1';
+const BUNDLE_RELEASE = `${REPO}/releases/tag/${BUNDLE_TAG}`;
+const BUNDLE_VERIFIER = `${REPO}/blob/${BUNDLE_TAG}/verify_bundle_v1_1.py`;
+const BUNDLE_VALID = `${REPO}/releases/download/${BUNDLE_TAG}/VALID_nodo-propio_20261012.txt`;
+const SEVILLA = 'https://sevilla.x39matrix.org';
 const STEP_ICONS = [FileText, PenLine, Anchor];
+const LINK = { color: 'var(--seal)', textDecoration: 'underline' };
 
 // La criptografía que usa la Notaría de verdad: [algoritmo, estándar, para qué sirve].
 const CRYPTO = {
@@ -110,13 +117,17 @@ export default function Landing() {
             </div>
             <p>{t('landing.sub')}</p>
             <div className="nt-hero-actions">
-              <button className="nt-btn nt-btn-seal" onClick={createFirst} data-testid="landing-cta-start">
-                {t('landing.ctaPrimary')}
-              </button>
-              <Link to={`/certificado/${DEMO_CERT_ID}#verificador`} className="nt-btn nt-btn-ghost" data-testid="landing-cta-verify-self">
-                {t('landing.ctaVerifySelf')}
+              <Link to="/app" className="nt-btn nt-btn-seal" data-testid="landing-cta-download">
+                {t('landing.ctaDownload')}
+              </Link>
+              <Link to="/verificar" className="nt-btn nt-btn-ghost" data-testid="landing-cta-verify">
+                {t('landing.ctaVerify')}
               </Link>
             </div>
+            <button type="button" onClick={createFirst} className="nt-note" data-testid="landing-cta-start"
+              style={{ marginTop: 12, background: 'none', border: 0, padding: 0, cursor: 'pointer', fontSize: 13, textDecoration: 'underline' }}>
+              {t('landing.ctaCreateBeta')}
+            </button>
           </div>
           <div role="link" tabIndex={0} onClick={() => navigate(`/certificado/${DEMO_CERT_ID}`)}
             onKeyDown={(e) => { if (e.key === 'Enter') navigate(`/certificado/${DEMO_CERT_ID}`); }}
@@ -164,6 +175,27 @@ export default function Landing() {
               </div>
             )}
           </div>
+        </section>
+
+        <section className="nt-card nt-card-pad" style={{ marginBottom: 20 }} data-testid="landing-evidencia">
+          <h2 className="nt-serif" style={{ fontSize: 24, fontWeight: 600, margin: '0 0 12px' }}>{t('landing.proofsT')}</h2>
+          <ul style={{ margin: '0 0 16px', paddingInlineStart: 20, fontSize: 14, lineHeight: 1.7 }}>
+            <li><Link to="/app" style={LINK} data-testid="proofs-apk">{t('landing.proofsApk')}</Link></li>
+            <li><a href={REPO} target="_blank" rel="noreferrer" style={LINK} data-testid="proofs-repo">{t('landing.proofsRepo')}</a></li>
+            <li>
+              <a href={BUNDLE_RELEASE} target="_blank" rel="noreferrer" style={LINK} data-testid="proofs-bundle">{t('landing.proofsBundle')}</a>
+              <span className="nt-mono" style={{ fontSize: 12, marginInlineStart: 8 }}>
+                <a href={BUNDLE_VERIFIER} target="_blank" rel="noreferrer" style={LINK}>verify_bundle_v1_1.py</a>
+                {' · '}
+                <a href={BUNDLE_VALID} target="_blank" rel="noreferrer" style={LINK}>VALID</a>
+              </span>
+            </li>
+            <li><a href={SEVILLA} target="_blank" rel="noreferrer" style={LINK} data-testid="proofs-sevilla">{t('landing.proofsSevilla')}</a></li>
+          </ul>
+          <h3 style={{ fontSize: 15, margin: '0 0 4px' }}>{t('landing.leavesT')}</h3>
+          <p className="nt-note" style={{ fontSize: 14, maxWidth: '70ch', margin: '0 0 12px' }} data-testid="landing-leaves">{t('landing.leaves')}</p>
+          <h3 style={{ fontSize: 15, margin: '0 0 4px' }}>{t('landing.notProveT')}</h3>
+          <p className="nt-note" style={{ fontSize: 14, maxWidth: '70ch', margin: 0 }} data-testid="landing-not-prove">{t('landing.notProve')}</p>
         </section>
 
         <section className="nt-steps">
@@ -228,7 +260,7 @@ export default function Landing() {
           </div>
         </section>
 
-        <section className="nt-card nt-card-pad" style={{ marginBottom: 64 }}>
+        <section className="nt-card nt-card-pad" style={{ marginBottom: 20 }}>
           <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
             <ShieldCheck size={22} strokeWidth={1.5} color="var(--seal)" style={{ flexShrink: 0, marginTop: 2 }} />
             <div>
@@ -239,16 +271,11 @@ export default function Landing() {
           </div>
         </section>
 
-        <section className="nt-card nt-card-pad" style={{ marginBottom: 64 }} data-testid="landing-comms">
-          <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-            <MessageCircle size={22} strokeWidth={1.5} color="var(--seal)" style={{ flexShrink: 0, marginTop: 2 }} />
-            <div>
-              <h2 className="nt-serif" style={{ fontSize: 22, margin: '0 0 8px', fontWeight: 600 }}>{t('landing.commsT')}</h2>
-              <p className="nt-note" style={{ fontSize: 14, maxWidth: '70ch', margin: 0 }}>{t('landing.commsBody')}</p>
-              <Link to="/comunicaciones" style={{ display: 'inline-block', marginTop: 10, fontSize: 14, color: 'var(--seal)', textDecoration: 'underline' }} data-testid="landing-comms-link">{t('landing.commsLink')}</Link>
-            </div>
-          </div>
-        </section>
+        <p className="nt-note" style={{ fontSize: 13, margin: '0 0 64px' }} data-testid="landing-comms">
+          <MessageCircle size={14} strokeWidth={1.5} style={{ verticalAlign: '-2px', marginInlineEnd: 6 }} aria-hidden="true" />
+          {t('landing.commsLine')}{' '}
+          <Link to="/comunicaciones" style={LINK} aria-label={t('footer.comms')} data-testid="landing-comms-link">→</Link>
+        </p>
       </main>
       <footer style={{ borderTop: '1px solid var(--border)', padding: '24px 0' }}>
         <div className="nt-wrap" style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
