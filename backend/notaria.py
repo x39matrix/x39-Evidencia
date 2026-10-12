@@ -509,6 +509,7 @@ async def create_agreement(data: CreateAgreementModel, request: Request, email: 
         "invite_token": secrets.token_urlsafe(18),
         "status": "pending_signatures",
         "signatures": {},
+        "chat_salt": secrets.token_hex(32),
         "created_at": _now(),
     }
     na.insert_one({**doc})
@@ -766,6 +767,17 @@ def _chat_hash(aid: str) -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
+def _chat_hash_v2(aid: str, salt_hex: str) -> str:
+    """HMAC-SHA256 con una sal por acuerdo. Cierra la fuga del chat vacio:
+    sha256("[]") era una constante publica e identica en todos los acuerdos.
+    NO protege frente a quien tenga acceso a la base de datos.
+    Cubre el mismo conjunto de mensajes que _build_chat_chain (limit 500)."""
+    msgs = list(nmsg.find({"agreement_id": aid},
+                          {"_id": 0, "sender": 1, "text": 1, "ct": 1, "iv": 1, "ts": 1}).sort("ts", 1).limit(500))
+    payload = json.dumps({"aid": aid, "msgs": msgs}, sort_keys=True, separators=(",", ":")).encode()
+    return hmac.new(bytes.fromhex(salt_hex), payload, hashlib.sha256).hexdigest()
+
+
 def _build_chat_chain(a: dict):
     """Cadena de hashes enlazada (anti-omision/anti-reordenacion) del chat E2E.
     Zero-knowledge: solo content_hash (sha256 del ciphertext), rol A/B y ts.
@@ -795,7 +807,13 @@ def _build_chat_chain(a: dict):
 
 async def _seal(a: dict):
     """Congela el chat, construye la prueba, la firma (ML-DSA) y la ancla (OTS)."""
-    chat_h = _chat_hash(a["agreement_id"])
+    _salt = a.get("chat_salt")
+    if _salt:
+        chat_h = _chat_hash_v2(a["agreement_id"], _salt)
+        _alg = "hmac-sha256"
+    else:
+        chat_h = _chat_hash(a["agreement_id"])
+        _alg = None
     chain_entries, chain_tip = _build_chat_chain(a)
     is_v2 = len(chain_entries) > 0
     proof = {
@@ -824,6 +842,8 @@ async def _seal(a: dict):
     # y queda anclado en Bitcoin y cubierto por la co-firma COLD.
     readme = _bundle_readme(a["agreement_id"])
     proof["files"] = {"README.md": hashlib.sha256(readme.encode()).hexdigest()}
+    if _alg:
+        proof["chat_hash_alg"] = _alg
     payload = json.dumps(proof, sort_keys=True, separators=(",", ":")).encode()
     proof_hash = hashlib.sha256(payload).hexdigest()
     proof["proof_hash"] = proof_hash
