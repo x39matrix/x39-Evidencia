@@ -11,7 +11,7 @@ WorkingDirectory=/opt/x39/api/backend
 EnvironmentFile=/etc/x39/api.env
 Environment=PATH=/opt/x39/api/.venv/bin:/usr/local/bin:/usr/bin:/bin
 Environment=HOME=/opt/x39/api/home
-ExecStart=/opt/x39/api/.venv/bin/uvicorn server:app --host 127.0.0.1 --port 8000 --proxy-headers --forwarded-allow-ips=127.0.0.1
+ExecStart=/opt/x39/api/.venv/bin/uvicorn server:app --host 127.0.0.1 --port 8000 --proxy-headers --forwarded-allow-ips=127.0.0.1 --no-access-log
 Restart=on-failure
 RestartSec=5
 
