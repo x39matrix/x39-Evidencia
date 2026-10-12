@@ -59,6 +59,7 @@ html, body { background: #1B1B1D; }
 .nt-btn:active { transform: scale(0.98); }
 .nt-btn-primary, .nt-btn-seal { background: var(--fg); color: var(--bg); }
 .nt-btn-primary:hover, .nt-btn-seal:hover { background: #FFFFFF; }
+.nt a.nt-btn-primary, .nt a.nt-btn-seal { color: var(--bg); }
 .nt-btn-ghost { background: transparent; color: var(--fg); border-color: var(--border); }
 .nt-btn-ghost:hover { border-color: var(--fg); }
 .nt-btn:disabled { opacity: .45; cursor: not-allowed; }
