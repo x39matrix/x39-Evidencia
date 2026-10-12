@@ -66,7 +66,7 @@ export const api = {
 export function goLogin(returnPath = '/panel') {
   window.location.href = `/entrar?next=${encodeURIComponent(returnPath)}`;
 }
-// SHA-256 en el navegador (el archivo NUNCA se sube)
+// Flujo web: SHA-256 en el navegador; el archivo no se envía a este endpoint.
 export async function sha256Hex(bufferOrString) {
   const data = typeof bufferOrString === 'string'
     ? new TextEncoder().encode(bufferOrString)
