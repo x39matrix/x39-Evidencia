@@ -7,6 +7,12 @@
 }
 
 api.x39matrix.org {
+	handle_path /registro/* {
+		root * /var/www/x39-registro
+		header Access-Control-Allow-Origin "*"
+		header Cache-Control "no-cache"
+		file_server
+	}
 	# No habilitar logs de acceso: contienen IP y metadatos de cada petición.
 	encode zstd gzip
 
