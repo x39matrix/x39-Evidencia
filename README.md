@@ -1,7 +1,7 @@
 # X-39 Evidencia
 
 X-39 Evidencia is a proof-of-existence layer for documents.
-1. The SHA-256 of the file is computed on the user's device; the file itself never leaves it (on the web, text typed into the site is sent to the service, and the site says so).
+1. In the website flow, the SHA-256 is computed in the browser and the file bytes stay in that browser; the filename and digest are sent to the service. This statement describes the website only. In the Android evidence app, sealing/anchoring sends a 32-byte commitment derived from the fingerprint to timestamp calendars. If the user chooses to send a capsule to a paired phone, the original is sent end-to-end encrypted.
 2. That hash is anchored in Bitcoin through OpenTimestamps; proofs verify against any Bitcoin node, and the reference deployment verifies them against our own full node.
 3. Where a legally recognised time is needed, the same hash receives an RFC 3161 qualified timestamp from ANF AC, a qualified trust service provider listed in the EU and Spanish trusted lists; the chain is verified with openssl against the ANF root, and the TSA certificate in that chain is cross-checked against the certificate registered in the Spanish trusted list.
 4. Proofs may carry an ML-DSA-87 (FIPS 204) co-signature produced on an air-gapped machine and verified against a published key fingerprint; it is optional, and its absence is reported, not hidden.
