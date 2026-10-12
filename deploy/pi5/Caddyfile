@@ -1,3 +1,11 @@
+{
+	# Log por defecto (journal): fuera los loggers que incluyen IP del cliente
+	# (errores de handshake TLS y errores de petición con remote_ip).
+	log default {
+		exclude http.stdlib http.log.error
+	}
+}
+
 api.x39matrix.org {
 	# No habilitar logs de acceso: contienen IP y metadatos de cada petición.
 	encode zstd gzip
