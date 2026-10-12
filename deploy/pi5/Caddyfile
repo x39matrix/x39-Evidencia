@@ -1,5 +1,5 @@
 api.x39matrix.org {
-	log
+	# No habilitar logs de acceso: contienen IP y metadatos de cada petición.
 	encode zstd gzip
 
 	request_body {
@@ -16,6 +16,7 @@ api.x39matrix.org {
 	respond @admin 404
 
 	reverse_proxy 127.0.0.1:8000 {
+		# Necesario solo para aplicar el límite de peticiones por IP en memoria.
 		header_up X-Forwarded-For {remote_host}
 	}
 
