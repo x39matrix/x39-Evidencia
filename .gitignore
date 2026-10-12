@@ -11,3 +11,6 @@ frontend/.env
 backend/.env
 # binarios del release; la copia canónica es el release de GitHub; copiar aquí antes de compilar
 frontend/public/app/
+
+# bundles y sidecars de release: la copia canónica es el release de GitHub
+release/
