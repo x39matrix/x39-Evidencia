@@ -10,12 +10,17 @@ const APK = 'x39-0.3.4-release.apk';
 const APK_SHA256 = '9c9d654cc9712c60e2803f1bf424fcf2bf409141c4a7d0f43eaa37b67b2d45ef';
 const APK_BYTES = '6 338 904 bytes';
 const CERT_SHA256 = '72f0745f993605b1b3cd30966162b6d98d84fcacbd23e2e07e24c3d15f7d8935';
-// Sin .ots: la prueba OpenTimestamps se publica cuando esté confirmada en un bloque.
-const VERIF = [`${APK}.sha256`, `${APK}.tsr`, `${APK}.cadena.pem`, `${APK}.sello.txt`, 'anf_root.pem'];
+const RELEASE = 'https://github.com/x39matrix/x39-Evidencia/releases/tag/evidencia-0.3.4';
+// Ancla OpenTimestamps confirmada y comprobada contra nodo propio (12/10/2026).
+const BTC_BLOCK = '971111';
+const BTC_BLOCK_HASH = '0000000000000000000060b2bffe888dd78493ead194f380b71f60d120589cd9';
+const VERIF = [`${APK}.sha256`, `${APK}.ots`, `${APK}.tsr`, `${APK}.cadena.pem`, `${APK}.sello.txt`, 'anf_root.pem'];
 const CMDS = [
   `sha256sum ${APK}`,
   `apksigner verify --print-certs ${APK}`,
   `openssl ts -verify -data ${APK} -in ${APK}.tsr -CAfile anf_root.pem -untrusted ${APK}.cadena.pem`,
+  `ots verify ${APK}.ots`,
+  `# → Success! Bitcoin block ${BTC_BLOCK} attests existence as of 2026-10-12 15:26:58 UTC (in your local time)`,
 ].join('\n');
 const PREV_APK = 'x39-0.3.3-release.apk';
 const PREV_SHA256 = '4c5c3a321a97f8bb45a83b5f8c878d27608b23499921df52fa079212ef330f03';
@@ -48,9 +53,13 @@ export default function AppMovil() {
           <p style={P}>
             <a href={`/app/${APK}`} download={APK} style={{ ...A, fontWeight: 600 }} data-testid="app-download">{t('appe.dlLink')}</a>
           </p>
+          <p style={P}>
+            <a href={RELEASE} target="_blank" rel="noreferrer" style={A} data-testid="app-github-release">{t('appe.dlLink2')}</a>
+          </p>
           <p className="nt-mono" style={MONO} data-testid="app-sha256">APK SHA-256: {APK_SHA256}</p>
           <p className="nt-mono" style={MONO} data-testid="app-size">{APK} · {APK_BYTES}</p>
           <p className="nt-mono" style={MONO}>Certificado de firma SHA-256: {CERT_SHA256}</p>
+          <p className="nt-mono" style={MONO} data-testid="app-btc-block">Bitcoin {BTC_BLOCK} · {BTC_BLOCK_HASH}</p>
           <p className="nt-mono" style={{ ...MONO, display: 'flex', flexWrap: 'wrap', gap: '4px 14px', marginTop: 10 }} data-testid="app-verif-files">
             {VERIF.map((f) => (
               <a key={f} href={`/app/${f}`} download={f} style={A}>{f}</a>
@@ -63,7 +72,7 @@ export default function AppMovil() {
           <p className="nt-note" style={P}>{t('appe.prev1')}</p>
           <p style={{ ...P, display: 'flex', flexWrap: 'wrap', gap: '4px 18px' }} data-testid="app-prev">
             <a href={`/app/${PREV_APK}`} download={PREV_APK} style={A} data-testid="app-prev-download">{t('appe.prevLink')}</a>
-            <a href={PREV_RELEASE} target="_blank" rel="noreferrer" style={A} data-testid="app-github-release">{t('appe.prevGh')}</a>
+            <a href={PREV_RELEASE} target="_blank" rel="noreferrer" style={A} data-testid="app-prev-github-release">{t('appe.prevGh')}</a>
           </p>
           <p className="nt-mono" style={MONO}>{PREV_APK} SHA-256: {PREV_SHA256}</p>
           {section('appe.permsT', ['appe.perms1', 'appe.perms2'])}
