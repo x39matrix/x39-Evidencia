@@ -3,17 +3,23 @@ import { Link } from 'react-router-dom';
 import { Nav } from './Nav';
 import { useLang } from './i18n';
 
-// Página de X-39 Evidencia para Android (release 0.3.3). El APK y sus ficheros de verificación se sirven
-// desde /app/ en este mismo dominio; /app/x39.apk es una copia del mismo APK para el enlace antiguo.
-const APK = 'x39-0.3.3-release.apk';
-const RELEASE = 'https://github.com/x39matrix/x39-Evidencia/releases/tag/evidencia-0.3.3';
-const VERIF = [`${APK}.sha256`, `${APK}.tsr`, `${APK}.cadena.pem`, `${APK}.ots`, 'anf_root.pem'];
+// Página de X-39 Evidencia para Android (release 0.3.4). El APK y sus ficheros de verificación se sirven
+// desde /app/ en este mismo dominio; /app/x39.apk es una copia del APK actual para el enlace antiguo.
+// La 0.3.3 se mantiene como versión anterior durante una release más.
+const APK = 'x39-0.3.4-release.apk';
+const APK_SHA256 = '9c9d654cc9712c60e2803f1bf424fcf2bf409141c4a7d0f43eaa37b67b2d45ef';
+const APK_BYTES = '6 338 904 bytes';
+const CERT_SHA256 = '72f0745f993605b1b3cd30966162b6d98d84fcacbd23e2e07e24c3d15f7d8935';
+// Sin .ots: la prueba OpenTimestamps se publica cuando esté confirmada en un bloque.
+const VERIF = [`${APK}.sha256`, `${APK}.tsr`, `${APK}.cadena.pem`, `${APK}.sello.txt`, 'anf_root.pem'];
 const CMDS = [
   `sha256sum ${APK}`,
   `apksigner verify --print-certs ${APK}`,
   `openssl ts -verify -data ${APK} -in ${APK}.tsr -CAfile anf_root.pem -untrusted ${APK}.cadena.pem`,
-  `ots verify ${APK}.ots`,
 ].join('\n');
+const PREV_APK = 'x39-0.3.3-release.apk';
+const PREV_SHA256 = '4c5c3a321a97f8bb45a83b5f8c878d27608b23499921df52fa079212ef330f03';
+const PREV_RELEASE = 'https://github.com/x39matrix/x39-Evidencia/releases/tag/evidencia-0.3.3';
 
 const P = { fontSize: 14, lineHeight: 1.6, margin: '0 0 12px' };
 const H2 = { fontSize: 20, fontWeight: 600, margin: '24px 0 10px' };
@@ -42,11 +48,9 @@ export default function AppMovil() {
           <p style={P}>
             <a href={`/app/${APK}`} download={APK} style={{ ...A, fontWeight: 600 }} data-testid="app-download">{t('appe.dlLink')}</a>
           </p>
-          <p style={P}>
-            <a href={RELEASE} target="_blank" rel="noreferrer" style={A} data-testid="app-github-release">{t('appe.dlLink2')}</a>
-          </p>
-          <p className="nt-mono" style={MONO}>APK SHA-256: 4c5c3a321a97f8bb45a83b5f8c878d27608b23499921df52fa079212ef330f03</p>
-          <p className="nt-mono" style={MONO}>Certificado de firma SHA-256: 72f0745f993605b1b3cd30966162b6d98d84fcacbd23e2e07e24c3d15f7d8935</p>
+          <p className="nt-mono" style={MONO} data-testid="app-sha256">APK SHA-256: {APK_SHA256}</p>
+          <p className="nt-mono" style={MONO} data-testid="app-size">{APK} · {APK_BYTES}</p>
+          <p className="nt-mono" style={MONO}>Certificado de firma SHA-256: {CERT_SHA256}</p>
           <p className="nt-mono" style={{ ...MONO, display: 'flex', flexWrap: 'wrap', gap: '4px 14px', marginTop: 10 }} data-testid="app-verif-files">
             {VERIF.map((f) => (
               <a key={f} href={`/app/${f}`} download={f} style={A}>{f}</a>
@@ -55,6 +59,13 @@ export default function AppMovil() {
           {section('appe.clocksT', ['appe.clock1', 'appe.clock2'])}
           {section('appe.verifyT', ['appe.verify1'])}
           <pre className="nt-code" dir="ltr" data-testid="app-verify-cmds">{CMDS}</pre>
+          <h2 className="nt-serif" style={H2}>{t('appe.prevT')}</h2>
+          <p className="nt-note" style={P}>{t('appe.prev1')}</p>
+          <p style={{ ...P, display: 'flex', flexWrap: 'wrap', gap: '4px 18px' }} data-testid="app-prev">
+            <a href={`/app/${PREV_APK}`} download={PREV_APK} style={A} data-testid="app-prev-download">{t('appe.prevLink')}</a>
+            <a href={PREV_RELEASE} target="_blank" rel="noreferrer" style={A} data-testid="app-github-release">{t('appe.prevGh')}</a>
+          </p>
+          <p className="nt-mono" style={MONO}>{PREV_APK} SHA-256: {PREV_SHA256}</p>
           {section('appe.permsT', ['appe.perms1', 'appe.perms2'])}
           {section('appe.srcT', ['appe.src1'])}
           <p style={{ margin: '28px 0 0', display: 'flex', flexWrap: 'wrap', gap: 18 }}>
