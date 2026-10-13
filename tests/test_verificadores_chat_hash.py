@@ -1,11 +1,11 @@
-"""Regresión: los verificadores aceptan bundles con chat_hash HMAC-SHA256 (commit a3d455fd).
+"""Regresión: integridad de bundles con chat_hash HMAC-SHA256.
 
 Ningún verificador recalcula chat_hash: el ZIP no lleva ni los mensajes ni la sal por
 acuerdo (a propósito). chat_hash viaja dentro de proof.json y queda cubierto por
 proof_hash, la co-firma ML-DSA y el ancla OTS, como cualquier otro campo.
 
 Los ZIP de testdata/e2e_chat_hmac_v*.zip salen de un backend local de pruebas
-(12/10/2026) con OTS sustituido por un marcador: se verifican con --skip-ots.
+(12/10/2026) sin COLD y con OTS sustituido por un marcador: no pueden aprobarse.
 
     python3 -m pytest tests/test_verificadores_chat_hash.py
 """
@@ -52,10 +52,11 @@ def test_bundle_lleva_hmac(bundle):
 
 
 @pytest.mark.parametrize("bundle", ZIPS, ids=lambda p: p.stem)
-def test_general_valida(bundle):
+def test_general_rechaza_bundle_sin_cold(bundle):
     r = _run(GENERAL, bundle, "--skip-ots")
-    assert r.returncode == 0, r.stderr
-    assert r.stdout.startswith("VALID")
+    assert r.returncode == 2, r.stderr
+    assert r.stderr.startswith("INVALID[2]")
+    assert "COLD" in r.stderr
 
 
 @pytest.mark.parametrize("bundle", ZIPS, ids=lambda p: p.stem)
