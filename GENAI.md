@@ -1,11 +1,11 @@
-## Project Origins and Transparency
+## Proyectos de Orígenes y Transparencia
 
-X39Matrix is an independent technology project conceived, directed, and developed under my responsibility.
+X39Matrix es un proyecto de tecnología independiente concebido, dirigido y desarrollado bajo mi responsabilidad.
 
-Its architecture, objectives, technical decisions, integration, and evolution are guided by the requirements I establish as the creator and person responsible for the project.
+Su arquitectura, objetivos, decisiones técnicas, integración y evolución se guían por los requisitos que establezco como creador y persona responsable del proyecto.
 
-Throughout its development, I have used artificial intelligence tools to support translation, documentation, analysis, and technical review, while retaining responsibility for decisions, evaluation, and validation of the results.
+A lo largo de su desarrollo, he utilizado herramientas de inteligencia artificial para apoyar la traducción, la documentación, el análisis y la revisión técnica, al tiempo que retengo la responsabilidad de las decisiones, la evaluación y la validación de los resultados.
 
-The first version of the website was developed with the assistance of artificial intelligence and was subsequently brought under my independent management and responsibility.
+La primera versión del sitio web se desarrolló con la ayuda de la inteligencia artificial y posteriormente se puso bajo mi gestión y responsabilidad independiente.
 
-This document provides a transparent disclosure of the use of these tools within X39Matrix.
+Este documento proporciona una divulgación transparente del uso de estas herramientas dentro de X39Matrix.
