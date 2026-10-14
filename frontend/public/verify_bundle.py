@@ -293,7 +293,7 @@ def emit(message: str, *, file: Any = _DEFAULT_STDOUT, essential: bool = False, 
 def io_failure() -> None:
     """No confundir una salida fallida con INVALID; incluso stderr puede fallar."""
     try:
-        os.write(2, b"ERROR E/S [4]: no se pudo completar la entrada/salida; no se emite veredicto\n")
+        os.write(2, b"\nERROR E/S [4]: no se pudo completar la entrada/salida; no se emite veredicto\n")
     except OSError:
         pass
     raise SystemExit(EXIT_IO)
@@ -377,7 +377,7 @@ def validate_zip_container(raw: bytes, unsupported_out: list[str] | None = None)
     """ZIP32 cerrado; especificacion y referencia JS en docs/zip-profile.md.
 
     No usar offsets corregidos por zipfile/JSZip: todos son absolutos desde 0.
-    Sin comentarios, ZIP64, cifrado ni volumenes multiples; extras UT/ux/NTFS
+    Sin comentarios, ZIP64, cifrado ni volumenes multiples; extras UT/ux/UNIX/NTFS
     y Unicode Path redundante.
     STORED/DEFLATE, con descriptor opcional de 12/16 bytes, son el perfil soportado.
     """
@@ -410,17 +410,32 @@ def validate_zip_container(raw: bytes, unsupported_out: list[str] | None = None)
         if tag == 0x000a:  # NTFS: reservado + un unico atributo 1 de 24 bytes
             return len(body) == 32 and struct.unpack_from("<HH", body, 4) == (1, 24)
         return False
-    def extra_profile(data: bytes, name_bytes: bytes) -> None:
+    def extra_profile(data: bytes, name_bytes: bytes, *, local: bool = False) -> bytes | None:
+        unix_times = None
         cursor, tags = 0, set()
         while cursor < len(data):
+            if (cursor + 4 > len(data) and data[cursor:cursor + 2] == b"\x55\x58"):
+                unsupported.append("extra Info-ZIP UNIX truncado (0x5855)")
+                break
             require(cursor + 4 <= len(data), "campo extra truncado")
             tag, length = struct.unpack_from("<HH", data, cursor)
             cursor += 4
+            if tag == 0x5855 and cursor + length > len(data):
+                unsupported.append("extra Info-ZIP UNIX truncado (0x5855)")
+                break
             require(cursor + length <= len(data), "campo extra fuera de limites")
             body = data[cursor:cursor + length]
             cursor += length
             labels = {0x5455: "Info-ZIP UT", 0x7875: "Info-ZIP UX", 0x000a: "NTFS",
                       0x7075: "Unicode Path", 0x0001: "ZIP64"}
+            if tag == 0x5855:  # Informativo: nunca aporta nombres, tamanos ni offsets.
+                if tag not in tags and len(body) == (12 if local else 8):
+                    struct.unpack("<IIHH" if local else "<II", body)
+                    unix_times = body[:8]
+                    tags.add(tag)
+                else:
+                    unsupported.append("extra Info-ZIP UNIX malformado o repetido (0x5855)")
+                continue
             if tag in (0x5455, 0x7875, 0x000a):
                 if tag not in tags and timestamp_extra_ok(tag, body):
                     tags.add(tag)
@@ -435,6 +450,8 @@ def validate_zip_container(raw: bytes, unsupported_out: list[str] | None = None)
             # Unicode Path no redundante cambia el nombre del extractor; ZIP64 y
             # cualquier otro extra quedan fuera del perfil.
             unsupported.append("extra " + labels.get(tag, "desconocido") + " (0x%04x)" % tag)
+        return unix_times
+    name_encodings: dict[bytes, bool] = {}
     for _ in range(count):
         require(pos + 46 <= end and raw[pos:pos + 4] == b"PK\x01\x02", "registro central invalido")
         values = struct.unpack_from("<4s6H3I5H2I", raw, pos)
@@ -450,11 +467,28 @@ def validate_zip_container(raw: bytes, unsupported_out: list[str] | None = None)
                 "tipo de miembro no regular/enlace prohibido")
         require(pos + 46 + nlen + xlen <= end, "nombre/extra central truncado")
         name_bytes = raw[pos + 46:pos + 46 + nlen]
-        extra_profile(raw[pos + 46 + nlen:pos + 46 + nlen + xlen], name_bytes)
+        unix_times = extra_profile(raw[pos + 46 + nlen:pos + 46 + nlen + xlen], name_bytes)
         try:
-            name = name_bytes.decode("utf-8" if flags & 0x800 else "cp437")
+            # ditto escribe UTF-8 sin bit 11; preferirlo si los bytes son validos.
+            # CP437 se conserva solo cuando no hay una interpretacion UTF-8 valida.
+            try:
+                name = name_bytes.decode("utf-8")
+            except UnicodeError:
+                if flags & 0x800:
+                    raise
+                name = name_bytes.decode("cp437")
         except UnicodeError:
             die(EXIT_INTEGRITY, "nombre ZIP ilegible")
+        # Un prefijo no ASCII compartido debe usar la misma convencion de bandera:
+        # extractores que obedecen bit 11 no deben dividir una ruta aparente unica.
+        parts = name_bytes.rstrip(b"/").split(b"/")
+        for depth in range(1, len(parts) + 1):
+            prefix = b"/".join(parts[:depth])
+            if any(byte >= 128 for byte in prefix):
+                utf8_flag = bool(flags & 0x800)
+                require(prefix not in name_encodings or name_encodings[prefix] == utf8_flag,
+                        "convenciones de nombre incompatibles en ruta compartida")
+                name_encodings[prefix] = utf8_flag
         # Directorio = nombre con barra final, como lo entienden los extractores.
         # Un atributo de directorio sin barra se extraeria como fichero invisible aqui.
         directory = name.endswith("/")
@@ -469,7 +503,7 @@ def validate_zip_container(raw: bytes, unsupported_out: list[str] | None = None)
         require(usize <= MAX_COMPRESSION_RATIO * max(1, csize), f"{terminal_text(name)}: ratio de compresion excesivo")
         entries.append(dict(name=name, directory=directory, name_bytes=name_bytes, needed=needed,
                             flags=flags, method=method, time=time, date=date, crc=crc,
-                            csize=csize, usize=usize, offset=offset))
+                            csize=csize, usize=usize, offset=offset, unix_times=unix_times))
         pos += 46 + nlen + xlen
     require(pos == end, "bytes/headers extra en directorio central")
     entries.sort(key=lambda e: e["offset"])
@@ -481,7 +515,11 @@ def validate_zip_container(raw: bytes, unsupported_out: list[str] | None = None)
         (_, needed, flags, method, time, date, crc, csize, usize,
          nlen, xlen) = struct.unpack_from("<4s5H3I2H", raw, pos)
         require(pos + 30 + nlen + xlen <= cd_start, "extra local o nombre truncado")
-        extra_profile(raw[pos + 30 + nlen:pos + 30 + nlen + xlen], entry["name_bytes"])
+        local_unix_times = extra_profile(raw[pos + 30 + nlen:pos + 30 + nlen + xlen],
+                                         entry["name_bytes"], local=True)
+        if (local_unix_times is not None and entry["unix_times"] is not None
+                and local_unix_times != entry["unix_times"]):
+            unsupported.append("extra Info-ZIP UNIX local/central incoherente (0x5855)")
         require(raw[pos + 30:pos + 30 + nlen] == entry["name_bytes"], "nombre local/central difiere")
         require((needed, flags, method, time, date) == tuple(entry[k] for k in
                 ("needed", "flags", "method", "time", "date")), "header local/central difiere")
@@ -1301,7 +1339,7 @@ def main() -> None:
         _output_queue = [item for item in _output_queue if not item[2]]
         _output_queue.append((sys.stderr, "ERROR USO [4]: salida esencial excede recursos; sin aprobacion\n", False, False))
         _output_queue.append((sys.stdout, "ERROR USO [4]: salida esencial excede recursos; sin aprobacion\n[FIN VEREDICTO]", False, True))
-    failed = sys.stdout is None or sys.stderr is None
+    failed = sys.stdout is None
     queue = _output_queue
     _output_queue = []
     _output_bytes, _output_limited = 0, False
@@ -1317,7 +1355,9 @@ def main() -> None:
             emit(message[:-1], file=stream, essential=True, final=True,
                  approval=approval, closure=closure)
         except (OutputIOError, VerifierUsageError):
-            failed = True
+            # stderr es diagnostico auxiliar; stdout conserva el cierre/veredicto.
+            if stream is not sys.stderr:
+                failed = True
     if failed:
         invalid = VERDICT_PRECEDENCE.get(code, 0) == VERDICT_PRECEDENCE[EXIT_INTEGRITY]
         if not invalid:
@@ -1329,7 +1369,7 @@ def main() -> None:
         except (OutputIOError, VerifierUsageError):
             pass
         try:
-            os.write(2, message.encode("ascii"))
+            os.write(2, ("\n" + message).encode("ascii"))
         except OSError:
             pass
     elif pending_closure:
@@ -1434,7 +1474,7 @@ def _main() -> None:
     emit("  VALID 0 acredita: nucleo COLD + documento + cadena del formato + ancla Bitcoin; "
          "no autoria de cada byte del contenedor", essential=True, approval=True)
     emit("  ZIP/JSON: solo ZIP32 STORED/DEFLATE, entradas contiguas y descriptores estandar; "
-         "extras UT/ux/NTFS y Unicode Path redundante; sin comentarios, enlaces ni ZIP64; "
+         "extras UT/ux/UNIX/NTFS y Unicode Path redundante; sin comentarios, enlaces ni ZIP64; "
          "una carpeta comun, directorios vacios y AppleDouble de __MACOSX tolerados; "
          "whitespace de JSON externos permitido; "
          "proof.json sigue firmado byte a byte; verified_at externo no es fecha autenticada")
@@ -1475,7 +1515,7 @@ def _main() -> None:
         emit(f"  ignorado: {essential_text(entry['name'])} ({entry['usize']} bytes)", essential=True)
     if ignored:
         no_cubiertos.append("metadatos/directorios enumerados como ignorados")
-    coverage_text = essential_text(', '.join(no_cubiertos)) if no_cubiertos else ""
+    coverage_text = ", ".join(essential_text(name) for name in no_cubiertos)
     if usage_errors:
         coverage_text += ("; " if coverage_text else "") + "contenedor/nombres no soportados: " + "; ".join(usage_errors)
     if coverage_text:

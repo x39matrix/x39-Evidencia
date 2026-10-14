@@ -1,7 +1,7 @@
 # Perfil ZIP cerrado — ronda 9b
 
 Fuente normativa leída: `verify_bundle.py`, SHA-256
-`6f134372093b11265b1f68ac790c35af4368c46fc88134aad804801887ba52bf`.
+`c03e715e8ec2078aedace0c62dcec6dca10eea21c6e93c5b9e16f7da50398aab`.
 Esta especificación deriva de `physical_member_name`, `core_name_skeleton`,
 `safe_member_name`, `validate_zip_container`, `load_zip` y la decisión de `_main`.
 Ante cambios de esa huella debe revisarse la especificación y su
@@ -59,13 +59,14 @@ Todo incumplimiento estructural de esta sección produce INVALID[1].
 
 Cada área extra es una secuencia de TLV: tag u16, longitud u16, cuerpo de
 esa longitud. Header de menos de 4 bytes o cuerpo fuera del área es
-INVALID[1], no 4. Un cuerpo de tag admitido malformado o repetido, con TLV
+INVALID[1], excepto 0x5855 truncado, que acumula 4. Un cuerpo de tag admitido malformado o repetido, con TLV
 bien delimitado, acumula «contenedor no soportado» (4). Los tags vistos se
 reinician para cada área local/central; solo un tag admitido con cuerpo válido
 se añade al conjunto. Ninguna fecha, UID/GID ni reservado NTFS se autentica.
 
 | Tag | Validación exacta del cuerpo |
 | --- | --- |
+| UNIX 0x5855 | Info-ZIP UNIX original, benigno e informativo: local exactamente 12 bytes (atime u32, mtime u32, uid u16, gid u16); central exactamente 8 bytes (atime u32, mtime u32). Little-endian. Si ambos están presentes sus primeros 8 bytes deben coincidir. Longitud incorrecta, repetición, truncamiento o tiempos incoherentes acumulan 4; nunca aporta nombres, contenido, tamaños ni offsets. |
 | UT 0x5455 | Longitud L >= 1; flags cuerpo[0] solo bits 0..2 (`flags & ~7 == 0`); `(L-1) % 4 == 0`; `(L-1)/4 <= popcount(flags)`. Por tanto admite menos tiempos que bits activos, incluso L=1; no exige igualdad. Tiempos de 4 bytes sin validación de valores. |
 | ux 0x7875 | Cuerpo vacío válido. Si no vacío: L >= 3, byte 0 = versión 1; byte 1 = longitud UID entre 1 y 8; `g = 2 + cuerpo[1]`, `g < L`; cuerpo[g] = longitud GID entre 1 y 8; `L == g + 1 + cuerpo[g]`. Bytes UID/GID sin validación numérica adicional. |
 | NTFS 0x000a | L exactamente 32; u16 en +4 = 1 y u16 en +6 = 24. Bytes +0..3 reservados sin exigir cero; +8..31 son tres tiempos de 8 bytes sin validación de valores. No hay otros atributos. |
@@ -84,13 +85,19 @@ de resolver los nombres. Un 4 NO implica genuinidad.
 
 ## Nombres físicos, Unicode y nombres resueltos
 
-Decodificar nombre central como UTF-8 estricto con bit 11, CP437 sin él.
+Decodificar nombre central como UTF-8 estricto con bit 11 (0x800). Sin él,
+preferir UTF-8 estricto si es válido (ditto); en caso contrario usar CP437,
+conservando archivos Windows heredados. UTF-8 inválido con bit 11 es INVALID[1].
+Para cada prefijo físico no ASCII compartido, exigir la misma bandera 0x800:
+mezclar convenciones puede dividir la ruta al extraer y produce INVALID[1].
 No exigir ASCII ni NFC original. El nombre local se compara como bytes.
 Para cada ruta física, quitar exactamente una `/` final si es directorio;
 rechazar vacío, `/` inicial, `\\`, `:`, puntos de código <32 o 127 y componentes
 vacíos, `.` o `..`. La clave es `NFC(nombre).casefold()` de Python.
 Claves repetidas son INVALID, incluso fichero/directorio con la misma clave.
-NFC/NFD equivalentes y diferencias de mayúsculas colisionan. No sustituir
+NFC/NFD equivalentes y diferencias de mayúsculas colisionan. El casefold
+también equipara `ſ` (U+017F) con `s`: `ſignatures.json` da 1 con o sin
+0x800. Los acentos normales NFC/NFD se conservan; no se eliminan en la clave. No sustituir
 casefold por toLowerCase en JS; usar tablas Unicode equivalentes a Python.
 La referencia incluye tablas casefold/combining de Unicode 16.0.0 del Python
 local; NFC/NFKD deben usar esa misma versión para garantizar paridad en
@@ -261,8 +268,8 @@ Windows («Enviar a carpeta comprimida», tar.exe/libarchive) y AppleDouble
 reales de macOS solo se han probado por emulación, no en esos sistemas.
 No se valida la estructura interna AppleDouble (ATTR/resource fork incluidos).
 Los bytes libres admitidos en UT/ux/NTFS (12, 16 y 28 en los casos de ataque)
-no cambian nombre ni contenido. El mojibake de Info-ZIP sin bandera UTF-8
-depende del creador del ZIP: el perfil interpreta esos bytes como CP437.
+no cambian nombre ni contenido. Los nombres sin bandera UTF-8 se interpretan como UTF-8 si es válido y como
+CP437 en caso contrario. Sus claves conservan los acentos NFC/NFD.
 
 ## Validación de ronda 9b (offline)
 

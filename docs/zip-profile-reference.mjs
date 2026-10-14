@@ -1,5 +1,5 @@
 // Referencia documental; NO integrada en frontend ni desplegada.
-// Fuente SHA-256: 47c18b21989cf80a6feccef1b45bfffe47b44dc17f2801b3361e9eb1dc2de2cd
+// Fuente SHA-256: c03e715e8ec2078aedace0c62dcec6dca10eea21c6e93c5b9e16f7da50398aab
 // Replica validate_zip_container de verify_bundle.py antes de usar un lector ZIP.
 import fs from 'node:fs';
 import { createInflateRaw } from 'node:zlib';
@@ -66,14 +66,27 @@ export async function validateZipContainer(bytes) {
     }
     return (crc ^ 0xffffffff) >>> 0;
   };
-  const extras = (data, nameBytes) => {
+  const extras = (data, nameBytes, local = false) => {
+    let unixTimes = null;
     let q = 0; const tags = new Set();
     while (q < data.length) {
+      if (q + 4 > data.length && data[q] === 0x55 && data[q+1] === 0x58) {
+        unsupported.push('extra Info-ZIP UNIX truncado (0x5855)'); break;
+      }
       require(q + 4 <= data.length, 'extra truncado');
       const dv = new DataView(data.buffer, data.byteOffset, data.byteLength);
       const tag = dv.getUint16(q,true), len = dv.getUint16(q+2,true); q += 4;
+      if (tag === 0x5855 && q+len > data.length) {
+        unsupported.push('extra Info-ZIP UNIX truncado (0x5855)'); break;
+      }
       require(q+len <= data.length, 'extra fuera de limites');
       const b = data.subarray(q,q+len); q += len;
+      if (tag === 0x5855) {
+        if (!tags.has(tag) && len === (local ? 12 : 8)) {
+          unixTimes = b.slice(0,8); tags.add(tag);
+        } else unsupported.push('extra Info-ZIP UNIX malformado o repetido (0x5855)');
+        continue;
+      }
       let ok = false;
       if (tag === 0x5455) ok = len >= 1 && (b[0] & ~7) === 0 && (len-1)%4 === 0
         && (len-1)/4 <= ((b[0]&1) + ((b[0]>>1)&1) + ((b[0]>>2)&1));
@@ -91,6 +104,7 @@ export async function validateZipContainer(bytes) {
         else unsupported.push('extra malformado o repetido (0x'+tag.toString(16).padStart(4,'0')+')');
       } else unsupported.push('extra no soportado (0x'+tag.toString(16).padStart(4,'0')+')');
     }
+    return unixTimes;
   };
   require(n <= 32 * M && n >= 22 && sig(0, 0x04034b50), 'tamano/prefijo');
   const end = n - 22;
@@ -100,7 +114,7 @@ export async function validateZipContainer(bytes) {
     && u16(end + 8) === count && count > 0 && count <= 256, 'volumen/comentario/recuento');
   require(cdStart + cdSize === end && cdStart < end, 'directorio no cubre fichero');
   let p = cdStart, total = 0;
-  const entries = [], seen = new Set();
+  const entries = [], seen = new Set(), nameEncodings = new Map();
   for (let i = 0; i < count; i++) {
     require(p + 46 <= end && sig(p, 0x02014b50), 'registro central');
     const e = {needed: u16(p + 6), flags: u16(p + 8), method: u16(p + 10),
@@ -115,11 +129,21 @@ export async function validateZipContainer(bytes) {
     const type = (external >>> 16) & 0o170000;
     require([0,0o100000,0o040000].includes(type), 'tipo no regular/enlace');
     require(p + 46 + nl + xl <= end, 'nombre/extra truncado');
-    extras(bytes.subarray(p+46+nl,p+46+nl+xl), bytes.subarray(p+46,p+46+nl));
+    e.unixTimes = extras(bytes.subarray(p+46+nl,p+46+nl+xl), bytes.subarray(p+46,p+46+nl));
     e.nameBytes = bytes.slice(p + 46, p + 46 + nl);
-    try { e.name = e.flags & 0x800 ? new TextDecoder('utf-8', {fatal:true, ignoreBOM:true}).decode(e.nameBytes)
-      : [...e.nameBytes].map(x => CP437[x]).join(''); }
-    catch { require(false, 'nombre ilegible'); }
+    try { e.name = new TextDecoder('utf-8', {fatal:true, ignoreBOM:true}).decode(e.nameBytes); }
+    catch {
+      require(!(e.flags & 0x800), 'nombre ilegible');
+      e.name = [...e.nameBytes].map(x => CP437[x]).join('');
+    }
+    for (let end=1; end<=e.nameBytes.length; end++) {
+      if (end !== e.nameBytes.length && e.nameBytes[end] !== 47) continue;
+      const prefix = e.nameBytes.subarray(0, e.nameBytes[end-1] === 47 ? end-1 : end);
+      if (!prefix.some(x => x >= 128)) continue;
+      const key = [...prefix].join(','), flag = !!(e.flags & 0x800);
+      require(!nameEncodings.has(key) || nameEncodings.get(key) === flag, 'convenciones de nombre incompatibles en ruta compartida');
+      nameEncodings.set(key, flag);
+    }
     e.directory = e.name.endsWith('/');
     require(e.directory || !(type === 0o040000 || (external & 0x10)), 'atributo directorio sin barra');
     const key = physical(e.directory ? e.name.slice(0,-1) : e.name);
@@ -136,7 +160,9 @@ export async function validateZipContainer(bytes) {
     require(e.offset === p && p + 30 <= cdStart && sig(p, 0x04034b50), 'offset/hueco local');
     const nl = u16(p + 26), xl = u16(p + 28);
     require(p + 30 + nl + xl <= cdStart, 'extra/nombre local');
-    extras(bytes.subarray(p+30+nl,p+30+nl+xl), e.nameBytes);
+    const localUnixTimes = extras(bytes.subarray(p+30+nl,p+30+nl+xl), e.nameBytes, true);
+    if (localUnixTimes !== null && e.unixTimes !== null && !same(localUnixTimes, e.unixTimes))
+      unsupported.push('extra Info-ZIP UNIX local/central incoherente (0x5855)');
     require(same(bytes.slice(p + 30, p + 30 + nl), e.nameBytes), 'nombre local/central');
     require(u16(p + 4) === e.needed && u16(p + 6) === e.flags && u16(p + 8) === e.method
       && u16(p + 10) === e.time && u16(p + 12) === e.date, 'header local/central');
