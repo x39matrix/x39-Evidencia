@@ -114,18 +114,20 @@ def test_three_copies_identical():
 
 
 @pytest.mark.parametrize('code', range(6))
-@pytest.mark.parametrize('redirect', ['2>/dev/full', '2>&-'])
+@pytest.mark.parametrize('redirect', ['2>/dev/full', '2>&-', '2>/dev/null'])
 def test_stderr_os_failure_all_codes(tmp_path, code, redirect):
     from test_verificador_estricto import ROOT
     # Proceso real: /dev/full falla al hacer flush; fd 2 cerrado deja stderr=None.
     script = tmp_path / 'stderr_failure.py'
     script.write_text(f'''
 import importlib.util
+import sys
 spec = importlib.util.spec_from_file_location('verifier', {str(ROOT / 'verify_bundle.py')!r})
 v = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(v)
 def verdict():
     code = {code}
+    v.emit('diagnostico auxiliar', file=sys.stderr, essential=True)
     if code in (0, 5):
         v.emit('VALID [0]' if code == 0 else 'VALID CON AVISOS [5]',
                essential=True, final=True, approval=True, closure=True)
@@ -139,17 +141,14 @@ v.main()
     result = subprocess.run(['bash', '-c',
         f'{shlex.quote(sys.executable)} {shlex.quote(str(script))} {redirect}'],
         capture_output=True, text=True, timeout=10)
-    expected = 4 if redirect == '2>&-' and code in (0, 5) else code
+    expected = code
     assert result.returncode == expected, result.stdout + result.stderr
     assert result.stdout.count(MARK) == 1
     assert result.stdout.splitlines()[-1] == MARK
     assert result.stderr == ''
     errors = [line for line in result.stdout.splitlines() if 'ERROR E/S' in line]
-    if redirect == '2>&-' or code not in (0, 5):
-        assert len(errors) == 1
-        assert errors[0].startswith('ERROR E/S')
-    else:
-        assert errors == []
+    assert errors == []
+
 
 
 def test_uncovered_wrapper_quotes_once(verifier, bundle, content, tmp_path, monkeypatch, capsys):
