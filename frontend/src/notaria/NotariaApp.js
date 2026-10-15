@@ -32,6 +32,7 @@ import Entrar from './Entrar';
 import Privacidad from './Privacidad';
 import Comunicaciones from './Comunicaciones';
 import AppMovil from './AppMovil';
+import NoEncontrado from './NoEncontrado';
 const AuthCtx = createContext(null);
 export const useAuth = () => useContext(AuthCtx);
 function Protected({ children }) {
@@ -91,7 +92,7 @@ function NotariaInner() {
           <Route path="/comunicaciones" element={<Comunicaciones />} />
           <Route path="/app" element={<AppMovil />} />
           <Route path="/app-movil" element={<AppMovil />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<NoEncontrado />} />
         </Routes>
       </div>
     </AuthCtx.Provider>
