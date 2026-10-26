@@ -1225,10 +1225,34 @@ def verify_ots(proof_bytes: bytes, ots_bytes: bytes, bitcoin_node: str | None = 
             except subprocess.TimeoutExpired:
                 die(EXIT_OTS, "ots verify timeout (120s)")
             if result.returncode != 0:
+                problem = bitcoin_node_problem(result.stderr)
+                if problem:
+                    # Sin nodo no se ha comprobado nada: decirlo claro, sin la traza de ots.
+                    die(EXIT_OTS, f"ANCLA NO COMPROBADA: {problem}; la rama Bitcoin "
+                        f"{terminal_text(attestation.height)} queda sin confirmar. Sin nodo no hay VALID; "
+                        "esto no indica que la evidencia sea falsa. Use un nodo Bitcoin propio "
+                        "(bitcoin.conf local) o --bitcoin-node URL")
                 die(EXIT_OTS, f"rama Bitcoin {terminal_text(attestation.height)} no confirmada: "
                     f"stdout={terminal_text(result.stdout)}; stderr={terminal_text(result.stderr)}")
             verified.append({"height": attestation.height, "merkle_root": merkle_root})
     return {"bitcoin_paths": verified, "legacy_calendar_metadata": legacy}
+
+
+def bitcoin_node_problem(stderr: str) -> str | None:
+    """Reconoce en la salida de 'ots verify' que el nodo Bitcoin no se pudo consultar.
+
+    Solo fallos de acceso al RPC (sin conexion, sin configuracion, credenciales
+    rechazadas). Cualquier otro fallo, p.ej. un Merkle que no coincide, devuelve None
+    y se informa con la salida completa de ots.
+    """
+    if "401 Unauthorized" in stderr:
+        return "el nodo Bitcoin rechazo las credenciales RPC (401 Unauthorized)"
+    unreachable = ("ConnectionRefusedError", "Connection refused", "TimeoutError", "timed out",
+                   "socket.gaierror", "Name or service not known", "No route to host",
+                   "bitcoin.conf", ".cookie")
+    if any(marker in stderr for marker in unreachable):
+        return "no hay nodo Bitcoin accesible (el RPC no responde o falta su configuracion)"
+    return None
 
 
 def verify_manifest(files: dict[str, bytes], proof: dict[str, Any]) -> list[str]:
