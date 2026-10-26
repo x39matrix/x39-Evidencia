@@ -283,6 +283,8 @@ def verify_msg_sigs(files: dict[str, bytes], proof: dict[str, Any]) -> None:
     for role, b in keys.items():
         raw = b64_decode_exact(f"sig_keys.{role}", b, 32)
         pks[role] = Ed25519PublicKey.from_public_bytes(raw)
+    if "chat_chain.json" not in files:
+        die(EXIT_INTEGRITY, "msg_sigs requiere chat_chain.json en el ZIP")
     chain = parse_json_bytes(files["chat_chain.json"], "chat_chain.json")
     aid = proof.get("agreement_id")
     checked = 0
