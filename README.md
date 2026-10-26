@@ -15,12 +15,59 @@ X-39 Evidencia is a proof-of-existence layer for documents.
 
 ## Verify it yourself
 
-These commands use the files of the Evidence Bundle v1. Run them from the bundle folder.
+There are two independent checks. **A** takes a real seal all the way to the reference verifier's `VALID [0]`. **B** reproduces the published Evidence Bundle v1, including its qualified timestamp.
 
-**Requirements:**
-- Python 3 with `cryptography` and `pqcrypto` (ML-DSA-87);
-- OpenSSL;
-- the OpenTimestamps client (`pip install opentimestamps-client`) for the Bitcoin step.
+### Set up once
+
+```sh
+python3 -m venv .venv
+. .venv/bin/activate
+pip install cryptography pqcrypto opentimestamps-client
+```
+
+`opentimestamps-client` installs both the `ots` command and the `opentimestamps` Python library into the same environment, and the verifier needs both. An `ots` installed separately (for example with pipx) is not enough: the verifier imports the library from its own interpreter. You also need OpenSSL for step B3.
+
+The Bitcoin step needs a Bitcoin node. If Bitcoin Core runs on the same machine, `ots` finds it through `~/.bitcoin/bitcoin.conf` (cookie or `rpcuser`/`rpcpassword`) and no option is needed. Otherwise pass `--bitcoin-node http://<rpcuser>:<rpcpassword>@<host>:8332` with real credentials; the literal `user:pass` gets `401 Unauthorized`.
+
+### A. The demo seal, end to end
+
+The demo agreement `demo0000demo0001` ("Contrato de diseno — Ana y Beto (demo)") is a real seal: co-signed with the production COLD key pinned in `verify_bundle.py` and anchored in Bitcoin. Its document is public, so you can supply it with `--content`. From a clone of this repository:
+
+```sh
+python3 -c "import ast; t = next(n.value for n in ast.walk(ast.parse(open('backend/notaria.py').read())) if isinstance(n, ast.Constant) and isinstance(n.value, str) and n.value.startswith('CONTRATO DE SERVICIOS FREELANCE\n\n')); open('contrato.txt', 'w').write(t)"
+sha256sum testdata/bundle_v1_prod.zip contrato.txt
+python3 verify_bundle.py testdata/bundle_v1_prod.zip --content contrato.txt
+```
+
+Expected hashes: `a648c11a00e3420e27e2a8e27ce0b6830e4b920fcd318335f5c30d6bd1505911` for the bundle and `d854b7e34a56b6a17289446d2ff8ff55236dc53cdf00b81d53bf81e680fbf937` for the document (the sealed `content_hash`).
+
+The verifier prints in Spanish. Expected output, abridged:
+
+```text
+  OTS Bitcoin: rama confirmada - bloque '957242' - Merkle 'ea27277f…'
+  OTS Bitcoin: rama confirmada - bloque '957246' - Merkle '384ddf6b…'
+  OTS Bitcoin: rama confirmada - bloque '957244' - Merkle '9356c7a4…'
+  ...
+  co-firma:    COLD ML-DSA-87 valida - clave PINEADA '8453a25a41d6fe8fcb5647600f042a7c303daaca79b80928534025711981c6a1'
+  ...
+  NO cubiertos: ninguno
+VALID [0]
+[FIN VEREDICTO]
+```
+
+A verdict only counts if the output ends with `[FIN VEREDICTO]`. `VALID [0]` means: the COLD co-signature over `proof.json` is valid with the pinned key, your document matches the sealed `content_hash`, and every Bitcoin branch of the proof was confirmed against your node. It does not prove authorship beyond control of the keys, nor that the contents are true. The output lists which files the verdict covers and which it does not.
+
+Partial checks never approve:
+
+- With `--content` and `--skip-ots`, the verifier checks everything except Bitcoin and ends with `INVALID[3]: VERIFICACION INCOMPLETA: OTS NO COMPROBADO (--skip-ots); no se emite VALID`. It means the check is unfinished, not that the evidence is bad.
+- Without `--content` there is no `VALID [0]`. Unless an earlier failure is reported first, the result is `ERROR USO/CONTENEDOR [4]: DOCUMENTO NO COMPROBADO`: the document was not supplied. It says nothing about the evidence.
+- Without a reachable Bitcoin node the anchor cannot be confirmed and there is no `VALID [0]`. The current verifier reports this as `INVALID[3]: rama Bitcoin '957242' no confirmada`, followed by the error from `ots`. Here it means the node is missing, not that the evidence is bad. To compare without a node, extract `proof.json` and `proof.json.ots` from the ZIP and upload them to <https://opentimestamps.org>; that check relies on that service.
+
+Exit codes: `0` valid, `5` valid with warnings, `1` integrity, `2` signature, `3` Bitcoin anchor not confirmed (also `--skip-ots`), `4` usage or environment.
+
+### B. The published Evidence Bundle v1
+
+Download `x39-bundle-v1.zip` from the [`bundle-v1` release](https://github.com/x39matrix/x39-Evidencia/releases/tag/bundle-v1), check its SHA-256 (see [Links](#links)), unzip it and run these commands from the bundle folder.
 
 **1. Integrity of every file in the bundle.** `MANIFEST` lists the SHA-256 of every other file.
 
@@ -28,13 +75,15 @@ These commands use the files of the Evidence Bundle v1. Run them from the bundle
 sha256sum -c MANIFEST
 ```
 
-**2. The agreement proof, offline.** This checks the proof hash, the chat chain, the per-message Ed25519 signatures and the COLD ML-DSA-87 co-signature against the fingerprint pinned in `verify_bundle.py`. `--skip-ots` leaves out the Bitcoin step, and the output says so.
+**2. The agreement proof.** The bundle ships the `verify_bundle.py` it was published with, an earlier and more lenient version than the reference verifier in this repository. It checks the proof hash, the chat chain, the per-message Ed25519 signatures and the COLD ML-DSA-87 co-signature against the pinned fingerprint.
 
 ```sh
 python3 verify_bundle.py 31e1cf09a5b2a74cd978.zip --skip-ots
 ```
 
-Expected: `VALID (OTS omitido)`. Add `--content <original file>` to check that the sealed `content_hash` is your file.
+Expected: `VALID (OTS omitido)`. That is a partial result: the Bitcoin step was skipped. Without `--skip-ots`, and with a node as described above, the expected result is `VALID`.
+
+This agreement's document is encrypted and not published, so this bundle cannot reach the reference verifier's `VALID [0]`, which requires the document. Use check A for that.
 
 **3. The RFC 3161 qualified timestamp.** The `.cadena.pem` chain ends at the TSA certificate, not at the root. So `-CAfile` must be the ANF root and the chain goes in `-untrusted`:
 
@@ -47,15 +96,15 @@ openssl x509 -in anf_root.pem -noout -fingerprint -sha256
 
 Expected: `Verification: OK`. The root is ANF Global Root CA, SHA-256 `E0:AF:BD:2C:0E:E9:5A:68:CD:9A:3C:59:0B:2D:3F:E0:7C:0A:6D:0B:E7:96:AE:52:91:E4:24:D4:77:92:17:8E`. The Spanish trusted list registers the TSA service certificate (`AF:BC:8E:2D:54:6C:A7:49:9D:8A:81:04:A7:65:B0:0D:2A:30:F3:B0:27:53:94:D6:7A:8D:60:C0:3D:01:63:B5`), which travels in the chain and is issued by that root. You reach that list from the European Commission's list of trusted lists: <https://ec.europa.eu/tools/lotl/eu-lotl.xml>.
 
-**4. The Bitcoin anchor.**
+**4. The Bitcoin anchor of the document.**
 
-- With your own Bitcoin node, nothing depends on a third party. Use either of these:
+- With your own Bitcoin node, nothing depends on a third party:
 
   ```sh
   ots verify "$D.ots"
-  python3 verify_bundle.py 31e1cf09a5b2a74cd978.zip --bitcoin-node http://user:pass@127.0.0.1:8332
   ```
 
+  Expected: `Success! Bitcoin block 966822 attests existence as of 2026-09-13` (the date is shown in your local time zone). The proof carries several Bitcoin attestations; `ots verify` reports the earliest.
 - Without a node, upload the file and its `.ots` to <https://opentimestamps.org>. That check relies on that service.
 - `ots info` only reads the proof. It does not check it against Bitcoin.
 
@@ -63,6 +112,7 @@ Expected: `Verification: OK`. The root is ANF Global Root CA, SHA-256 `E0:AF:BD:
 
 - **Web:** <https://x39matrix.org>. Public verifier: <https://x39matrix.org/verificar>.
 - **Android app (X-39 Evidencia 0.3.4, test release, not audited):** [Releases](https://github.com/x39matrix/x39-Evidencia/releases). Each release lists the APK SHA-256, the signing-certificate fingerprint, the qualified timestamp and the `.ots` proof.
+- **Demo seal:** [`testdata/bundle_v1_prod.zip`](testdata/bundle_v1_prod.zip), agreement `demo0000demo0001`, SHA-256 `a648c11a00e3420e27e2a8e27ce0b6830e4b920fcd318335f5c30d6bd1505911`.
 - **Evidence Bundle v1:** [release `bundle-v1`](https://github.com/x39matrix/x39-Evidencia/releases/tag/bundle-v1). The ZIP `x39-bundle-v1.zip` has SHA-256 `2c93b6c74071139f4201cfbd6012cc4391ebe8430cf7b2f7eced34cc7121a0ce`.
 - **Evidence Bundle v1.1:** [release `bundle-v1.1`](https://github.com/x39matrix/x39-Evidencia/releases/tag/bundle-v1.1): both clocks required (Bitcoin anchor and RFC 3161 qualified timestamp) and its own strict verifier, `verify_bundle_v1_1.py`. The commands above refer to v1.
 - **Documentation and audits:** [`docs/`](docs/).
