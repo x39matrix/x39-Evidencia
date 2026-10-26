@@ -34,7 +34,8 @@ The Bitcoin step needs a Bitcoin node. If Bitcoin Core runs on the same machine,
 The demo agreement `demo0000demo0001` ("Contrato de diseno — Ana y Beto (demo)") is a real seal: co-signed with the production COLD key pinned in `verify_bundle.py` and anchored in Bitcoin. Its document is public, so you can supply it with `--content`. From a clone of this repository:
 
 ```sh
-python3 -c "import ast; t = next(n.value for n in ast.walk(ast.parse(open('backend/notaria.py').read())) if isinstance(n, ast.Constant) and isinstance(n.value, str) and n.value.startswith('CONTRATO DE SERVICIOS FREELANCE\n\n')); open('contrato.txt', 'w').write(t)"
+git clone https://github.com/x39matrix/x39-Evidencia && cd x39-Evidencia
+python3 -c "import ast; t = next(n.value for n in ast.walk(ast.parse(open('backend/notaria.py', encoding='utf-8').read())) if isinstance(n, ast.Constant) and isinstance(n.value, str) and n.value.startswith('CONTRATO DE SERVICIOS FREELANCE\n\n')); open('contrato.txt','wb').write(t.encode('utf-8'))"
 sha256sum testdata/bundle_v1_prod.zip contrato.txt
 python3 verify_bundle.py testdata/bundle_v1_prod.zip --content contrato.txt
 ```
