@@ -299,9 +299,20 @@ def io_failure() -> None:
     raise SystemExit(EXIT_IO)
 
 
+def same_destination(a: Any, b: Any) -> bool:
+    """True si ambos flujos escriben en el mismo terminal o fichero (p.ej. stderr y stdout en consola)."""
+    try:
+        sa, sb = os.fstat(a.fileno()), os.fstat(b.fileno())
+    except (OSError, ValueError, AttributeError, io.UnsupportedOperation):
+        return False
+    return (sa.st_dev, sa.st_ino) == (sb.st_dev, sb.st_ino)
+
+
 def emit_verdict(message: str) -> None:
     # Mantener el canal histórico y añadir un veredicto completo a stdout.
-    emit(message, file=sys.stderr, essential=True, final=True)
+    # Si stderr y stdout van al mismo destino, la copia de stderr solo duplicaria la linea.
+    if not same_destination(sys.stderr, sys.stdout):
+        emit(message, file=sys.stderr, essential=True, final=True)
     emit(message, essential=True, final=True, closure=True)
 
 
@@ -1121,7 +1132,8 @@ def parse_ots_bitcoin_paths(proof_bytes: bytes, ots_bytes: bytes) -> tuple[Any, 
         from opentimestamps.core.op import OpSHA256, OpAppend, OpPrepend
         from opentimestamps.core.notary import BitcoinBlockHeaderAttestation, PendingAttestation
     except ImportError:
-        die(EXIT_IO, "opentimestamps no disponible")
+        die(EXIT_IO, "libreria Python opentimestamps no importable desde este interprete "
+                     "(pip install opentimestamps-client en el mismo entorno; un 'ots' instalado con pipx no basta)")
     try:
         stream = io.BytesIO(ots_bytes)
         detached = DetachedTimestampFile.deserialize(StreamDeserializationContext(stream))
