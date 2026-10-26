@@ -1,6 +1,12 @@
 # X-39 Evidencia
 
 X-39 Evidencia is a proof-of-existence layer for documents.
+
+> [!WARNING]
+> **Status: test release.** X-39 Evidencia 0.3.4 is a test version, not the final one. It has not been audited by any independent third party; that audit is pending. The verifier has passed internal, reproducible tests. Do not rely on this build for critical use.
+> This applies to the app, not to the evidence it produces: a Bitcoin anchor or an ANF qualified timestamp, once issued, is real and anyone can verify it.
+> Every release publishes its APK SHA-256, signing-certificate fingerprint, qualified timestamp and `.ots` proof, so you can check the evidence yourself instead of trusting this notice.
+
 1. In the website flow, the SHA-256 is computed in the browser and the file bytes stay in that browser; only the SHA-256 digest is sent to the service; the file name is not. This statement describes the website only. In the Android evidence app, sealing/anchoring sends a 32-byte commitment derived from the fingerprint to timestamp calendars. If the user chooses to send a capsule to a paired phone, the original is sent end-to-end encrypted.
 2. That hash is anchored in Bitcoin through OpenTimestamps; proofs verify against any Bitcoin node, and the reference deployment verifies them against our own full node.
 3. Where a legally recognised time is needed, the same hash receives an RFC 3161 qualified timestamp from ANF AC, a qualified trust service provider listed in the EU and Spanish trusted lists; the chain is verified with openssl against the ANF root, and the TSA certificate in that chain is cross-checked against the certificate registered in the Spanish trusted list.
@@ -56,7 +62,7 @@ Expected: `Verification: OK`. The root is ANF Global Root CA, SHA-256 `E0:AF:BD:
 ## Links
 
 - **Web:** <https://x39matrix.org>. Public verifier: <https://x39matrix.org/verificar>.
-- **Android app (X-39 Evidencia 0.3.4):** [Releases](https://github.com/x39matrix/x39-Evidencia/releases). Each release lists the APK SHA-256, the signing-certificate fingerprint, the qualified timestamp and the `.ots` proof.
+- **Android app (X-39 Evidencia 0.3.4, test release, not audited):** [Releases](https://github.com/x39matrix/x39-Evidencia/releases). Each release lists the APK SHA-256, the signing-certificate fingerprint, the qualified timestamp and the `.ots` proof.
 - **Evidence Bundle v1:** [release `bundle-v1`](https://github.com/x39matrix/x39-Evidencia/releases/tag/bundle-v1). The ZIP `x39-bundle-v1.zip` has SHA-256 `2c93b6c74071139f4201cfbd6012cc4391ebe8430cf7b2f7eced34cc7121a0ce`.
 - **Evidence Bundle v1.1:** [release `bundle-v1.1`](https://github.com/x39matrix/x39-Evidencia/releases/tag/bundle-v1.1): both clocks required (Bitcoin anchor and RFC 3161 qualified timestamp) and its own strict verifier, `verify_bundle_v1_1.py`. The commands above refer to v1.
 - **Documentation and audits:** [`docs/`](docs/).
