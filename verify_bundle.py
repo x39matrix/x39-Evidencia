@@ -41,7 +41,7 @@ Unicode se escapan sin NFKC. El marcador de truncado queda fuera del valor.
 Detalles limitados a 1024 bytes por valor, salida total a 32768 bytes. Identidad
 y cobertura se imprimen antes de avisos, completas; si exceden recursos no se
 emite aprobacion (4). La reserva final preserva el veredicto.
-La precedencia es INVALID > uso/contenedor/E-S (4) > avisos (5) > limpio (0).
+La precedencia es INVALID > uso/contenedor/E-S (4) > CONSISTENTE sin COLD (6) > avisos (5) > limpio (0).
 Contenedores con otros extras o mas de una carpeta envolvente, estructuralmente seguros, se comprueban solo
 para escalar a INVALID, nunca para obtener 0/5. Un 4 no implica genuinidad. README
 heredado con referencia SHA-256 exacta es miembro declarado y permite 0.
@@ -52,10 +52,15 @@ sin inventar un fallo de integridad.
 Las referencias locales de verified_at no son fechas firmadas ni anclas de tiempo;
 Bitcoin aporta una cota superior: proof.json existia antes del bloque confirmado,
 no una fecha exacta ni la fecha de la co-firma COLD.
-VALID exige COLD reconocida, --content y OTS verificado. --skip-ots solo permite
-diagnostico offline: nunca emite VALID ni devuelve cero.
+VALID exige COLD reconocida, --content y OTS verificado. Sin bloque COLD (ausente o
+null), con las comprobaciones obligatorias correctas y OTS verificado: CONSISTENTE (6).
+No es VALID: falta la atestacion COLD en este paquete; puede haber anomalias externas.
+La co-firma se aplica despues del sellado. Una COLD presente
+pero vacia, falsa o no reconocida sigue siendo INVALID[2]. --skip-ots solo permite
+diagnostico offline: nunca emite VALID ni CONSISTENTE ni devuelve cero.
 Exit codes: 0 VALID limpio  -  1 integridad  -  2 firma  -  3 OTS/Bitcoin incompleto
              -  4 uso/IO  -  5 VALID CON AVISOS (anomalias fuera de la aprobacion COLD)
+             -  6 CONSISTENTE sin co-firma COLD (no es aprobacion)
 Ayuda: -h/--help devuelve 4, nunca VALID. Rutas que empiezan por guion:
 verify_bundle.py --content documento -- -h
 El veredicto se determina antes de escribir; un fallo de salida conserva INVALID,
@@ -87,6 +92,7 @@ ML_DSA_87_PK_LEN = 2592
 ML_DSA_87_SIG_LEN = 4627
 EXIT_OK, EXIT_INTEGRITY, EXIT_SIG, EXIT_OTS, EXIT_IO = 0, 1, 2, 3, 4
 EXIT_WARNINGS = 5
+EXIT_CONSISTENT = 6  # sin co-firma COLD; no es aprobacion
 MAX_ZIP_BYTES = 32 * 1024 * 1024
 MAX_MEMBER_BYTES = 16 * 1024 * 1024
 MAX_TOTAL_BYTES = 32 * 1024 * 1024
@@ -220,9 +226,10 @@ class VerifierUsageError(Exception):
     pass
 
 
-# Precedencia: INVALID (1/2/3) > uso/contenedor/E-S (4) > avisos (5) > limpio (0).
+# Precedencia: INVALID (1/2/3) > uso/contenedor/E-S (4) > CONSISTENTE (6) > avisos (5) > limpio (0).
+# El 6 no entra en candidates: se decide al final de main(), cuando ya no hay INVALID ni 4.
 VERDICT_PRECEDENCE = {EXIT_INTEGRITY: 3, EXIT_SIG: 3, EXIT_OTS: 3,
-                      EXIT_IO: 2, EXIT_WARNINGS: 1, EXIT_OK: 0}
+                      EXIT_IO: 2, EXIT_CONSISTENT: 1, EXIT_WARNINGS: 1, EXIT_OK: 0}
 
 
 def essential_text(value: Any) -> str:
@@ -241,7 +248,7 @@ _DEFAULT_STDOUT = object()
 
 def emit(message: str, *, file: Any = _DEFAULT_STDOUT, essential: bool = False, final: bool = False,
          approval: bool = False, closure: bool = False) -> None:
-    """approval marca la linea de veredicto 0/5: se retira por bandera, nunca por su texto."""
+    """approval marca la linea de veredicto 0/5/6: se retira por bandera, nunca por su texto."""
     global _output_bytes, _output_limited, _output_resource_error
     stream = sys.stdout if file is _DEFAULT_STDOUT else file
     safe = message + "\n"
@@ -951,25 +958,31 @@ def verify_signatures(proof_bytes: bytes, sigs_raw: bytes,
     notes: list[str] = []
     cold_fp: str | None = None
     cold = sigs.get("cold")
-    if not isinstance(cold, dict) or not cold:
-        die(EXIT_SIG, "falta la co-firma COLD reconocida; no se puede emitir VALID")
-    extra_fields(cold, {"algorithm", "tier", "fingerprint", "public_key_b64", "signature_b64", "verified_at"},
-                 "signatures.json.cold", anomalies, reject=True)
-    validate_verified_at(cold, proof)
-    if "verified_at" in cold:
-        historical = HISTORICAL_COLD_VERIFIED_AT.get(hashlib.sha256(proof_bytes).hexdigest())
-        if cold["verified_at"] != historical:
-            anomalies.append("signatures.json.cold.verified_at: fecha externa NO autenticada por COLD "
-                             "ni reconocida por referencia historica local")
-        else:
-            notes.append("COLD verified_at: referencia historica local; NO es fecha firmada por COLD")
-    try:
-        cold_fp = check_ml_dsa_signature("cold", cold, proof_bytes,
-                                         trusted=TRUSTED_COLD_FINGERPRINTS)
-    except SignatureEnvironmentError as e:
-        die(EXIT_IO, terminal_text(e))
-    except SigError as e:
-        die(EXIT_SIG, terminal_text(e))
+    if cold is None:
+        # COLD AUSENTE (no mala): la co-firma llega despues del sellado, por sneakernet.
+        # Sin ella no hay VALID; todo lo demas se comprueba igual y, si es correcto y el
+        # OTS verifica, main() emite CONSISTENTE [6]. Presente pero invalida: INVALID[2].
+        notes.append("SIN co-firma COLD: falta su atestacion en este paquete; no se emite VALID")
+    elif not isinstance(cold, dict) or not cold:
+        die(EXIT_SIG, "co-firma COLD presente pero vacia o malformada; no se puede emitir VALID")
+    else:
+        extra_fields(cold, {"algorithm", "tier", "fingerprint", "public_key_b64", "signature_b64", "verified_at"},
+                     "signatures.json.cold", anomalies, reject=True)
+        validate_verified_at(cold, proof)
+        if "verified_at" in cold:
+            historical = HISTORICAL_COLD_VERIFIED_AT.get(hashlib.sha256(proof_bytes).hexdigest())
+            if cold["verified_at"] != historical:
+                anomalies.append("signatures.json.cold.verified_at: fecha externa NO autenticada por COLD "
+                                 "ni reconocida por referencia historica local")
+            else:
+                notes.append("COLD verified_at: referencia historica local; NO es fecha firmada por COLD")
+        try:
+            cold_fp = check_ml_dsa_signature("cold", cold, proof_bytes,
+                                             trusted=TRUSTED_COLD_FINGERPRINTS)
+        except SignatureEnvironmentError as e:
+            die(EXIT_IO, terminal_text(e))
+        except SigError as e:
+            die(EXIT_SIG, terminal_text(e))
     warm = sigs.get("warm")
     if warm is not None:
         # WARM no aporta atestacion independiente y la COLD no autentica este
@@ -1372,9 +1385,9 @@ def main() -> None:
     finally:
         _capture_output = False
     # El veredicto ya esta decidido. La escritura no puede rebajar INVALID a 4.
-    if code not in (EXIT_OK, EXIT_WARNINGS):
+    if code not in (EXIT_OK, EXIT_WARNINGS, EXIT_CONSISTENT):
         _output_queue = [item for item in _output_queue if not item[2]]
-    if _output_resource_error and code in (EXIT_OK, EXIT_WARNINGS):
+    if _output_resource_error and code in (EXIT_OK, EXIT_WARNINGS, EXIT_CONSISTENT):
         code = EXIT_IO
         _output_queue = [item for item in _output_queue if not item[2]]
         _output_queue.append((sys.stderr, "ERROR USO [4]: salida esencial excede recursos; sin aprobacion\n", False, False))
@@ -1465,6 +1478,8 @@ def _main() -> None:
     result = (stage(verify_signatures, proof_bytes, files["signatures.json"], anomalies=anomalies)
               if "signatures.json" in files else None)
     notes, cold_fp = result if result is not None else ([], None)
+    # COLD ausente: verify_signatures no muere y devuelve cold_fp None (presente e invalida muere con 2).
+    cold_missing = result is not None and cold_fp is None
     stage(verify_content_hash, proof, args.content)
     anomalies.extend(auxiliary_parse_anomalies(files, proof, uncovered))
     for name in ("proof.json", "signatures.json"):
@@ -1506,23 +1521,33 @@ def _main() -> None:
              "las claves las declara el propio proof.json y no prueban identidad")
     if cold_fp:
         emit(f"  co-firma:    COLD ML-DSA-87 valida - clave PINEADA {essential_text(cold_fp)}", essential=True)
+    elif cold_missing:
+        emit("  co-firma:    SIN COLD (ausente): sin atestacion COLD en este paquete", essential=True)
     emit(f"  sealed_at:   {terminal_text(proof.get('sealed_at'))} (declarado en proof.json)")
     if ots_summary:
         for path in ots_summary["bitcoin_paths"]:
             emit(f"  el ancla solo acota: proof.json existia antes del bloque {terminal_text(path['height'])}")
     # Honestidad de cobertura: que ficheros del ZIP respalda este veredicto y cuales no.
-    emit("  VALID 0 acredita: nucleo COLD + documento + cadena del formato + ancla Bitcoin; "
-         "no autoria de cada byte del contenedor", essential=True, approval=True)
+    if cold_missing:
+        emit("  CONSISTENTE 6 acredita: documento + cadena del formato + ancla Bitcoin; "
+             "SIN atestacion COLD; no autoria de cada byte del contenedor", essential=True, approval=True)
+    else:
+        emit("  VALID 0 acredita: nucleo COLD + documento + cadena del formato + ancla Bitcoin; "
+             "no autoria de cada byte del contenedor", essential=True, approval=True)
     emit("  ZIP/JSON: solo ZIP32 STORED/DEFLATE, entradas contiguas y descriptores estandar; "
          "extras UT/ux/UNIX/NTFS y Unicode Path redundante; sin comentarios, enlaces ni ZIP64; "
          "una carpeta comun, directorios vacios y AppleDouble de __MACOSX tolerados; "
          "whitespace de JSON externos permitido; "
-         "proof.json sigue firmado byte a byte; verified_at externo no es fecha autenticada")
-    emit("  COLD autentica: todos los bytes y campos de proof.json; no acredita su veracidad")
+         "una COLD valida autentica proof.json byte a byte; verified_at externo no es fecha autenticada")
+    if cold_missing:
+        emit("  SIN COLD: proof.json comprobado por huella y ancla Bitcoin; sin atestacion COLD")
+    else:
+        emit("  COLD autentica: todos los bytes y campos de proof.json; no acredita su veracidad")
     emit("  COLD NO autentica: signatures.json (titulo y campos cruzados solo contrastados), "
           "metadatos COLD/WARM externos, nombre/fecha del fichero original, "
           "campos extra de chat_chain.json ni ficheros fuera de proof.files")
-    emit("  documento: SHA-256 de --content contrastado con content_hash autenticado por COLD")
+    emit("  documento: SHA-256 de --content contrastado con content_hash"
+         + (" (sin atestacion COLD)" if cold_missing else " autenticado por COLD"))
     verificados = {"proof.json"}
     parciales = {"signatures.json"}
     if "README.md" in files and "README.md" not in (proof.get("files") or {}):
@@ -1579,6 +1604,13 @@ def _main() -> None:
         emit(f"  ANOMALIA:    {anomaly}")
     if args.skip_ots:
         die(EXIT_OTS, "VERIFICACION INCOMPLETA: OTS NO COMPROBADO (--skip-ots); no se emite VALID")
+    if cold_missing:
+        # Comprobaciones obligatorias y ancla correctas; sin COLD no hay VALID, incluso sin anomalias.
+        emit("  sin co-firma soberana COLD: huella, manifiesto y ancla Bitcoin verificados; "
+             "falta la atestacion COLD en este paquete. NO es VALID. Si la co-firma llega despues, "
+             "vuelva a verificar", essential=True, final=True)
+        emit("CONSISTENTE [6]", essential=True, final=True, approval=True, closure=True)
+        sys.exit(EXIT_CONSISTENT)
     if final_code == EXIT_WARNINGS:
         emit("  aprobacion sostenida solo por COLD valida + documento + cadena "
               "(cuando el formato la incluye) + ancla Bitcoin; metadatos externos no autenticados "

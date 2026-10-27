@@ -10,13 +10,16 @@ from test_verificador_f1_f5 import archive, run
 MARK = '[FIN VEREDICTO]'
 
 
-@pytest.mark.parametrize('code', range(6))
+@pytest.mark.parametrize('code', range(7))
 def test_unique_closure_all_verdicts(verifier, bundle, content, tmp_path, monkeypatch, capsys, code):
     monkeypatch.setattr(subprocess, 'run', lambda *a, **k: subprocess.CompletedProcess(a, 0, '', ''))
     if code == 1:
         bundle['proof.json'] = b'{}'
     elif code == 2:
-        sig = json.loads(bundle['signatures.json']); sig['cold'] = None
+        sig = json.loads(bundle['signatures.json']); sig['cold'] = {}  # presente pero vacia
+        bundle['signatures.json'] = json.dumps(sig).encode()
+    elif code == 6:
+        sig = json.loads(bundle['signatures.json']); sig.pop('cold')  # ausente: CONSISTENTE
         bundle['signatures.json'] = json.dumps(sig).encode()
     elif code == 4:
         bundle = {'PROOF.JSON/' + n: v for n, v in bundle.items()}
@@ -26,7 +29,7 @@ def test_unique_closure_all_verdicts(verifier, bundle, content, tmp_path, monkey
     assert actual == code, output.out + output.err
     assert (output.out + output.err).count(MARK) == 1
     assert output.out.splitlines()[-1] == MARK
-    if code in (0, 5):
+    if code in (0, 5, 6):
         assert output.err == ''
 
 

@@ -52,11 +52,16 @@ def test_bundle_lleva_hmac(bundle):
 
 
 @pytest.mark.parametrize("bundle", ZIPS, ids=lambda p: p.stem)
-def test_general_rechaza_bundle_sin_cold(bundle):
+def test_general_no_aprueba_bundle_sin_cold(bundle):
+    # Sin COLD nunca hay VALID.
     r = _run(GENERAL, bundle, "--skip-ots")
-    assert r.returncode == 2, r.stderr
-    assert r.stderr.startswith("INVALID[2]")
-    assert "COLD" in r.stderr
+    # Estos bundles se verifican sin --content: el general para en 4 (documento no
+    # comprobado) tras dejar constancia de que no hay COLD. Con --content y ancla
+    # verificada seria CONSISTENTE [6], que tampoco es aprobacion.
+    assert r.returncode == 4, r.stderr + r.stdout
+    assert r.stderr.startswith("ERROR USO/CONTENEDOR [4]")
+    assert "SIN COLD (ausente)" in r.stdout
+    assert "VALID [0]" not in r.stdout and "CONSISTENTE [6]" not in r.stdout
 
 
 @pytest.mark.parametrize("bundle", ZIPS, ids=lambda p: p.stem)

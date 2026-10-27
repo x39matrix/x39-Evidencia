@@ -73,7 +73,7 @@ def run_main(module, files, tmp_path, monkeypatch, capsys, content=None, skip=Tr
 
 @pytest.mark.parametrize('case,code,reason', [
     ('empty', 1, 'vacio'), ('unknown_version', 1, 'version'),
-    ('missing_hash', 1, 'content_hash'), ('missing_cold', 2, 'COLD'),
+    ('missing_hash', 1, 'content_hash'), ('missing_cold', 3, 'OTS NO COMPROBADO'),
     ('empty_cold', 2, 'COLD'), ('cold_false', 2, 'COLD'),
     ('cold_corrupt', 2, 'ML-DSA-87.verify FALLO'),
     ('proof_title', 1, 'proof_hash mismatch'),

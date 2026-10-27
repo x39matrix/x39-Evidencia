@@ -17,6 +17,8 @@ X-39 Evidencia is a proof-of-existence layer for documents.
 
 There are two independent checks. **A** takes a real seal all the way to the reference verifier's `VALID [0]`. **B** reproduces the published Evidence Bundle v1, including its qualified timestamp.
 
+Exit codes of `verify_bundle.py`: `0` VALID; `5` VALID with warnings; `6` CONSISTENT — the required document-hash, manifest/format and Bitcoin-anchor checks pass, but the package has no COLD co-signature (applied after sealing, offline). Warnings outside that scope may remain; this is not COLD attestation or approval; `1` integrity, `2` signature, `3` anchor not verified; `4` usage or container.
+
 ### Set up once
 
 ```sh
