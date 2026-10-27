@@ -1028,10 +1028,12 @@ async def public_proof(aid: str):
 # ---------- Estado de pago (solo lectura, no custodial) ----------
 @notaria_router.get("/agreements/{aid}/payment_status")
 @limiter.limit("30/minute")
-async def payment_status(aid: str, request: Request):
+async def payment_status(aid: str, request: Request, email: str = Depends(current_user)):
     _rate_limit(request, "paystatus", limit=30, window=60)
     a = na.find_one({"agreement_id": aid}, {"_id": 0})
-    if not a or not a.get("payment"):
+    if not a or not _member(a, email):
+        raise HTTPException(404, "Este acuerdo no tiene un pago asociado")
+    if not a.get("payment"):
         raise HTTPException(404, "Este acuerdo no tiene un pago asociado")
     pm = a["payment"]
     addr = pm["address"]
@@ -1389,9 +1391,9 @@ async def public_html(aid: str, request: Request):
     if not a:
         raise HTTPException(404, "Prueba no encontrada")
     st = await _refresh_ots(a)
-    proto = request.headers.get("x-forwarded-proto", "https")
-    host = request.headers.get("x-forwarded-host") or request.headers.get("host", "")
-    base = f"{proto}://{host}" if host else os.environ.get("REACT_APP_BACKEND_URL", "")
+    # El host publico es fijo: NO se construye desde cabeceras del cliente.
+    # x-forwarded-host/host son datos no confiables -> XSS reflejado si entran en el HTML (SEC).
+    base = (os.environ.get("REACT_APP_BACKEND_URL") or "https://x39matrix.org").rstrip("/")
     anchored = st["status"] == "anchored_btc"
     estado = f"Confirmado en bloque Bitcoin #{st['btc_block']}" if anchored else "Pendiente de confirmacion"
     title = f"X-39 Notaria — {_clean(a['title'], 80)}"
