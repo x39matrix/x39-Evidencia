@@ -72,7 +72,6 @@ export default function Crear() {
         content_hash: hash,
         content_kind: kind,
         content_text: kind === 'text' ? text : null,
-        file_name: kind === 'file' ? file.name : null,
         ...(payEnabled && amountOk && addrOk
           ? { pay_amount: payAmount.trim(), pay_address: payAddress.trim(), pay_payer: payWho }
           : {}),
