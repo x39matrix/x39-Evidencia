@@ -109,6 +109,24 @@ Expected: `Verification: OK`. The root is ANF Global Root CA, SHA-256 `E0:AF:BD:
 - Without a node, upload the file and its `.ots` to <https://opentimestamps.org>. That check relies on that service.
 - `ots info` only reads the proof. It does not check it against Bitcoin.
 
+### C. The test suite
+
+The verifier ships with its adversarial test suite (mutated ZIP containers, forged
+signatures, altered documents, terminal-escape injection, resource limits). It runs
+offline: no network, no signing, no Bitcoin node. The macOS container tests use real
+archives produced on a Mac by [`x39-fixtures-macos`](https://github.com/x39matrix/x39-fixtures-macos);
+clone it next to this repository or those tests are skipped.
+
+```sh
+git clone https://github.com/x39matrix/x39-fixtures-macos
+git clone https://github.com/x39matrix/x39-Evidencia && cd x39-Evidencia
+pip install pytest
+python3 -m pytest tests/
+```
+
+Expected: every test passes (494 as of commit `65a9b89c`). Node.js is needed by the
+tests that compare the Python verifier with the JavaScript ZIP reference.
+
 ## Links
 
 - **Web:** <https://x39matrix.org>. Public verifier: <https://x39matrix.org/verificar>.
