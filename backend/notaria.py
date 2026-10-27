@@ -1398,6 +1398,9 @@ async def public_html(aid: str, request: Request):
     # El host publico es fijo: NO se construye desde cabeceras del cliente.
     # x-forwarded-host/host son datos no confiables -> XSS reflejado si entran en el HTML (SEC).
     base = (os.environ.get("REACT_APP_BACKEND_URL") or "https://x39matrix.org").rstrip("/")
+    # La web y la API son hosts distintos: certificado, verificador e imagen OG viven en la
+    # WEB (en la API dan 404). og:url si es de la API: es la direccion de ESTA pagina.
+    web_base = (os.environ.get("X39_WEB_BASE") or "https://x39matrix.org").rstrip("/")
     anchored = st["status"] == "anchored_btc"
     block_text = str(st["btc_block"])
     estado_text = f"Confirmado en bloque Bitcoin #{block_text}" if anchored else "Pendiente de confirmacion"
@@ -1406,10 +1409,10 @@ async def public_html(aid: str, request: Request):
     title = html_escape(f"X-39 Notaria — {title_text}", quote=True)
     desc = html_escape(f"Prueba de acuerdo anclada en Bitcoin. {estado_text}. Verificable por cualquiera, gratis.", quote=True)
     aid_path = url_quote(aid, safe="")
-    ver = html_escape(f"{base}/verificar", quote=True)
-    cert = html_escape(f"{base}/certificado/{aid_path}", quote=True)
+    ver = html_escape(f"{web_base}/verificar", quote=True)
+    cert = html_escape(f"{web_base}/certificado/{aid_path}", quote=True)
     og_url = html_escape(f"{base}/api/notaria/p/{aid_path}", quote=True)
-    og_img = html_escape(f"{base}/og_notaria.jpg", quote=True)
+    og_img = html_escape(f"{web_base}/og_x39_evidencia.jpg", quote=True)
     block_url = html_escape("https://mempool.space/block/" + url_quote(block_text, safe=""), quote=True)
     html = f"""<!doctype html><html lang="es"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
