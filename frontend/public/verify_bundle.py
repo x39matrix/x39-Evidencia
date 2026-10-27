@@ -117,6 +117,14 @@ LEGACY_METADATA = {
         "README.md": "d850d03098fcc63a5b984cbb5409d2fdf1c01d02b86079002382a35da3f4dbf2",
         "proof.json.ots": "4b396c8bc6c4b023c6adfaf9e8af613c6331684fa96cc7a0017c3e7ef8ead8f3",
     },
+    # 76901ac6458bb0613e16 (28/08/2026) — bundle anterior al README congelado
+    "73e46b57769444e5aba7177482303091d8dfecaa6304196ac39f69ca2383027a": {
+        "README.md": "9dafe51ca9aa87b4a51ea420a7e5cafd812a660d72b2dbfd61662d18f4c57caa",
+    },
+    # 6ede1b77d889acd9b02a (28/08/2026) — bundle anterior al README congelado
+    "99709c4d2f90a2c7029c112b3458250280a85b2e1f53e7493e3ca6daf0fd708d": {
+        "README.md": "233616ce01a9732e224daf806ef1be320373dd453d57c38f27afdc5dd9ac685b",
+    },
 }
 LEGACY_WARM_NOTE = (
     "clave de operador retirada 2026-07-16 (SEC-003); firma historica verificable / "
