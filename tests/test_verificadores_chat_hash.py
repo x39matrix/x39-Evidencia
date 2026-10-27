@@ -51,16 +51,29 @@ def test_bundle_lleva_hmac(bundle):
         assert all(b"chat_salt" not in z.read(n) for n in z.namelist())
 
 
+def _opentimestamps_importable_aislado():
+    """El general se lanza con `python -I` (sin user-site): si ahi no se importa
+    opentimestamps, el verificador no puede leer la prueba y lo dice con 4."""
+    return subprocess.run([sys.executable, "-I", "-c", "import opentimestamps"],
+                          capture_output=True, timeout=60).returncode == 0
+
+
 @pytest.mark.parametrize("bundle", ZIPS, ids=lambda p: p.stem)
 def test_general_no_aprueba_bundle_sin_cold(bundle):
-    # Sin COLD nunca hay VALID.
+    # Sin COLD nunca hay VALID. Estos ZIP llevan un marcador en vez de .ots: el general
+    # los rechaza con INVALID[3] en cuanto lee la prueba, tambien con --skip-ots (el perfil
+    # local se comprueba igual) y antes de llegar al documento. Si el interprete aislado no
+    # puede importar opentimestamps, no puede leer la prueba y para en 4 diciendolo: es el
+    # entorno, no la evidencia, y la prueba lo distingue en vez de dar por buena una u otra.
     r = _run(GENERAL, bundle, "--skip-ots")
-    # Estos bundles se verifican sin --content: el general para en 4 (documento no
-    # comprobado) tras dejar constancia de que no hay COLD. Con --content y ancla
-    # verificada seria CONSISTENTE [6], que tampoco es aprobacion.
-    assert r.returncode == 4, r.stderr + r.stdout
-    assert r.stderr.startswith("ERROR USO/CONTENEDOR [4]")
-    assert "SIN COLD (ausente)" in r.stdout
+    if _opentimestamps_importable_aislado():
+        assert r.returncode == 3, r.stderr + r.stdout
+        assert r.stderr.startswith("INVALID[3]: .ots vacio, ilegible o no verificable")
+    else:
+        assert r.returncode == 4, r.stderr + r.stdout
+        assert r.stderr.startswith("ERROR USO/CONTENEDOR [4]")
+        assert "opentimestamps no importable" in r.stderr
+        assert "SIN COLD (ausente)" in r.stdout
     assert "VALID [0]" not in r.stdout and "CONSISTENTE [6]" not in r.stdout
 
 
