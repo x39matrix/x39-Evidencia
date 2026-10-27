@@ -17,6 +17,8 @@ import hmac
 import secrets
 import base64
 import zipfile
+from html import escape as html_escape
+from urllib.parse import quote as url_quote
 from datetime import datetime, timezone, timedelta
 from decimal import Decimal, InvalidOperation
 from typing import Optional
@@ -1397,19 +1399,25 @@ async def public_html(aid: str, request: Request):
     # x-forwarded-host/host son datos no confiables -> XSS reflejado si entran en el HTML (SEC).
     base = (os.environ.get("REACT_APP_BACKEND_URL") or "https://x39matrix.org").rstrip("/")
     anchored = st["status"] == "anchored_btc"
-    estado = f"Confirmado en bloque Bitcoin #{st['btc_block']}" if anchored else "Pendiente de confirmacion"
-    title = f"X-39 Notaria — {_clean(a['title'], 80)}"
-    desc = f"Prueba de acuerdo anclada en Bitcoin. {estado}. Verificable por cualquiera, gratis."
-    ver = f"{base}/verificar"
-    cert = f"{base}/certificado/{aid}"
-    og_img = f"{base}/og_notaria.jpg"
+    block_text = str(st["btc_block"])
+    estado_text = f"Confirmado en bloque Bitcoin #{block_text}" if anchored else "Pendiente de confirmacion"
+    title_text = _clean(a["title"], 80)
+    # _clean no escapa comillas ni &: escapar cada valor final para texto/atributos.
+    title = html_escape(f"X-39 Notaria — {title_text}", quote=True)
+    desc = html_escape(f"Prueba de acuerdo anclada en Bitcoin. {estado_text}. Verificable por cualquiera, gratis.", quote=True)
+    aid_path = url_quote(aid, safe="")
+    ver = html_escape(f"{base}/verificar", quote=True)
+    cert = html_escape(f"{base}/certificado/{aid_path}", quote=True)
+    og_url = html_escape(f"{base}/api/notaria/p/{aid_path}", quote=True)
+    og_img = html_escape(f"{base}/og_notaria.jpg", quote=True)
+    block_url = html_escape("https://mempool.space/block/" + url_quote(block_text, safe=""), quote=True)
     html = f"""<!doctype html><html lang="es"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{title}</title>
 <meta property="og:type" content="website">
 <meta property="og:title" content="{title}">
 <meta property="og:description" content="{desc}">
-<meta property="og:url" content="{base}/api/notaria/p/{aid}">
+<meta property="og:url" content="{og_url}">
 <meta property="og:image" content="{og_img}">
 <meta property="og:image:width" content="1264">
 <meta property="og:image:height" content="848">
@@ -1426,12 +1434,12 @@ h1{{font-family:Georgia,serif;font-weight:500;font-size:28px;margin:0 0 4px}}
 .ok{{background:#1F5940;color:#fff}} .pend{{border:1px solid #D5D2CA;color:#6B6A65}}
 a.btn{{display:inline-block;margin-top:24px;background:#161616;color:#fff;text-decoration:none;padding:12px 20px;border-radius:4px}}</style>
 </head><body><div class="card">
-<div class="lbl">X-39 Notaria</div><h1>{_clean(a['title'], 80)}</h1>
-<div class="badge {'ok' if anchored else 'pend'}">{estado}</div>
-<div class="lbl">Hash del contenido (SHA-256)</div><div class="mono">{a['content_hash']}</div>
-<div class="lbl">Hash de la prueba</div><div class="mono">{a['proof']['proof_hash']}</div>
-<div class="lbl">Sellado (UTC)</div><div class="mono">{a['sealed_at']}</div>
-{f'<div class="lbl">Bloque Bitcoin</div><div class="mono"><a href="https://mempool.space/block/{st["btc_block"]}" style="color:#1F5940">mempool.space/block/{st["btc_block"]}</a></div>' if anchored else ''}
+<div class="lbl">X-39 Notaria</div><h1>{html_escape(title_text, quote=True)}</h1>
+<div class="badge {'ok' if anchored else 'pend'}">{html_escape(estado_text, quote=True)}</div>
+<div class="lbl">Hash del contenido (SHA-256)</div><div class="mono">{html_escape(str(a['content_hash']), quote=True)}</div>
+<div class="lbl">Hash de la prueba</div><div class="mono">{html_escape(str(a['proof']['proof_hash']), quote=True)}</div>
+<div class="lbl">Sellado (UTC)</div><div class="mono">{html_escape(str(a['sealed_at']), quote=True)}</div>
+{f'<div class="lbl">Bloque Bitcoin</div><div class="mono"><a href="{block_url}" style="color:#1F5940">mempool.space/block/{html_escape(block_text, quote=True)}</a></div>' if anchored else ''}
 <a class="btn" href="{cert}">Ver certificado</a>
 <a class="btn" style="background:#1F5940;margin-left:8px" href="{ver}">Verificar esta prueba</a>
 </div></body></html>"""
