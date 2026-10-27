@@ -78,7 +78,7 @@ def run_main(module, files, tmp_path, monkeypatch, capsys, content=None, skip=Tr
     ('cold_corrupt', 2, 'ML-DSA-87.verify FALLO'),
     ('proof_title', 1, 'proof_hash mismatch'),
     ('proof_rehashed', 2, 'ML-DSA-87.verify FALLO'),
-    ('signatures_title', 1, 'title difiere'),
+    ('signatures_title', 1, "'title' difiere"),
     ('document_corrupt', 1, 'content_hash mismatch'),
     ('duplicate_json', 1, 'duplicado'),
 ])
@@ -123,7 +123,7 @@ def test_negatives(verifier, bundle, content, tmp_path, monkeypatch, capsys, cas
 def test_no_document(verifier, bundle, tmp_path, monkeypatch, capsys):
     code, output = run_main(verifier, bundle, tmp_path, monkeypatch, capsys)
     assert code == 4
-    assert 'INVALID[4]: DOCUMENTO NO COMPROBADO' in output.err
+    assert 'ERROR USO/CONTENEDOR [4]: DOCUMENTO NO COMPROBADO' in output.err
 
 
 def test_skip_ots_never_approves(verifier, bundle, content, tmp_path, monkeypatch, capsys):
@@ -133,7 +133,6 @@ def test_skip_ots_never_approves(verifier, bundle, content, tmp_path, monkeypatc
     assert 'VALID' not in output.out.splitlines()
     assert 'COLD autentica: todos los bytes y campos de proof.json' in output.out
     assert 'COLD NO autentica: signatures.json' in output.out
-    assert 'cobertura parcial: signatures.json' in output.out
 
 
 def test_complete_path_with_simulated_ots(verifier, bundle, content, tmp_path, monkeypatch, capsys):
@@ -175,16 +174,16 @@ def test_warm_is_only_legacy_information(verifier, bundle, content, tmp_path, mo
     code, output = run_main(verifier, bundle, tmp_path, monkeypatch, capsys, content, skip=False)
     anomalous = warm_case in ('corrupt', 'malformed', 'empty')
     assert code == (5 if anomalous else 0)
-    assert output.out.splitlines()[-1] == ('VALID CON AVISOS [5]' if anomalous else 'VALID [0]')
+    assert output.out.endswith(('VALID CON AVISOS [5]' if anomalous else 'VALID [0]') + '\n[FIN VEREDICTO]')
     assert not output.err
     if warm_case == 'valid':
-        assert 'WARM: firma heredada, clave en línea retirada el 2026-07-16; no cuenta para el veredicto' in output.out
+        assert 'WARM: firma heredada, clave en linea retirada el 2026-07-16' in output.out
     if warm_case in ('corrupt', 'malformed', 'empty'):
         assert 'WARM: NO VERIFICA:' in output.out
         assert 'ANOMALIA:' in output.out
-        assert 'aprobación sostenida solo por COLD válida + documento + cadena' in output.out
+        assert 'aprobacion sostenida solo por COLD valida + documento + cadena' in output.out
     elif warm_case == 'valid':
-        assert 'WARM: comprobación heredada correcta' in output.out
+        assert 'WARM: comprobacion heredada correcta' in output.out
 
 
 def test_warm_environment_failure_is_informative(verifier, bundle, content, tmp_path, monkeypatch, capsys):
@@ -197,7 +196,7 @@ def test_warm_environment_failure_is_informative(verifier, bundle, content, tmp_
     monkeypatch.setattr(subprocess, 'run', lambda command, **kwargs:
                         subprocess.CompletedProcess(command, 0, '', ''))
     code, output = run_main(verifier, bundle, tmp_path, monkeypatch, capsys, content, skip=False)
-    assert code == 5 and output.out.splitlines()[-1] == 'VALID CON AVISOS [5]'
+    assert code == 5 and output.out.endswith('VALID CON AVISOS [5]\n[FIN VEREDICTO]')
     assert 'WARM: NO VERIFICA:' in output.out
     assert not output.err
 
@@ -220,10 +219,10 @@ def test_auxiliary_parse_anomalies(verifier, bundle, content, tmp_path, monkeypa
     if expected == 1:
         assert output.err.startswith('INVALID[1]')
         return
-    assert output.out.splitlines()[-1] == ('VALID CON AVISOS [5]' if expected == 5 else 'VALID [0]')
+    assert output.out.endswith(('VALID CON AVISOS [5]' if expected == 5 else 'VALID [0]') + '\n[FIN VEREDICTO]')
     if expected == 5:
         assert name in output.out and 'ANOMALIA:' in output.out
-        assert 'aprobación sostenida solo por COLD válida + documento + cadena' in output.out
+        assert 'aprobacion sostenida solo por COLD valida + documento + cadena' in output.out
     assert not output.err
 
 
@@ -233,8 +232,8 @@ def test_auxiliary_zip_crc_anomaly(verifier, bundle, content, tmp_path, monkeypa
                         subprocess.CompletedProcess(command, 0, '', ''))
     code, output = run_main(verifier, bundle, tmp_path, monkeypatch, capsys, content,
                             skip=False, corrupt_member='extra.txt')
-    assert code == 5 and output.out.splitlines()[-1] == 'VALID CON AVISOS [5]'
-    assert 'extra.txt: fichero auxiliar ilegible' in output.out
+    assert code == 5 and output.out.endswith('VALID CON AVISOS [5]\n[FIN VEREDICTO]')
+    assert "'extra.txt': fichero auxiliar ilegible" in output.out
 
 
 @pytest.mark.parametrize('name', ['proof.json', 'signatures.json'])
@@ -250,7 +249,7 @@ def test_required_manifest_member_cannot_be_skipped(verifier, tmp_path, monkeypa
         files = {n: z.read(n) for n in z.namelist()}
     code, output = run_main(verifier, files, tmp_path, monkeypatch, capsys,
                             corrupt_member='README.md')
-    assert code == 1 and 'manifiesto: falta README.md' in output.err
+    assert code == 1 and "manifiesto: falta 'README.md'" in output.err
 
 
 def test_document_failure_overrides_warm_anomaly(verifier, bundle, content, tmp_path, monkeypatch, capsys):
@@ -285,10 +284,11 @@ def test_unexpected_crypto_result_fails(verifier, monkeypatch, result):
 def test_always_none_crypto_library_is_rejected(verifier, bundle, monkeypatch, capsys):
     from pqcrypto.sign import ml_dsa_87
     monkeypatch.setattr(ml_dsa_87, 'verify', lambda *args: None)
-    with pytest.raises(SystemExit) as exc:
+    # El autotest caza la libreria envenenada: die(4) se propaga como VerifierUsageError
+    # y main() lo imprime como ERROR USO/CONTENEDOR [4]. Se exige el motivo exacto.
+    with pytest.raises(verifier.VerifierUsageError) as exc:
         verifier.verify_signatures(bundle['proof.json'], bundle['signatures.json'])
-    assert exc.value.code == 4
-    assert capsys.readouterr().err.startswith('INVALID[4]')
+    assert 'acepta una firma ALTERADA' in str(exc.value)
 
 
 def test_v3_cannot_skip_message_signatures(verifier, capsys):

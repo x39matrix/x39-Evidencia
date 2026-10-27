@@ -972,8 +972,11 @@ def verify_signatures(proof_bytes: bytes, sigs_raw: bytes,
         die(EXIT_SIG, terminal_text(e))
     warm = sigs.get("warm")
     if warm is not None:
-        # WARM no aporta atestacion independiente, pero si se incluye debe
-        # ajustarse al perfil historico y verificar. Ausente/null es legitimo.
+        # WARM no aporta atestacion independiente y la COLD no autentica este
+        # bloque: si no verifica es ANOMALIA (5), nunca INVALID, para que nadie
+        # pueda degradar una evidencia autentica tocando signatures.json.
+        # Ausente/null es legitimo. La COLD copiada en el hueco WARM sigue siendo
+        # INVALID[2]; un campo extra o una nota alterada, INVALID[1].
         if isinstance(warm, dict):
             try:
                 candidate_pk = b64_decode_strict("warm.public_key", warm.get("public_key_b64"), ML_DSA_87_PK_LEN)
@@ -996,10 +999,11 @@ def verify_signatures(proof_bytes: bytes, sigs_raw: bytes,
                 raise SigError(f"clave WARM no reconocida: {terminal_text(warm_fingerprint)}")
             warm_fp = check_ml_dsa_signature("warm", warm, proof_bytes, trusted=TRUSTED_WARM_FINGERPRINTS)
             notes.append("WARM: firma heredada, clave en linea retirada el 2026-07-16; "
-                         "no aporta atestacion independiente; si esta presente debe verificar")
+                         "no aporta atestacion independiente; si no verifica es anomalia, no invalida")
             notes.append(f"WARM: comprobacion heredada correcta ({terminal_text(warm_fp[:16])}...)")
         except (SigError, ValueError, TypeError, AttributeError) as e:
-            die(EXIT_SIG, f"signatures.json / WARM: NO VERIFICA: {terminal_text(e)}")
+            anomalies.append(f"signatures.json / WARM: NO VERIFICA: {terminal_text(e)}; "
+                             "no cuenta para el veredicto, que sostiene la COLD")
     return notes, cold_fp
 
 

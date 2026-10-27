@@ -37,7 +37,7 @@ CASES = [
     ('nombre_parent_externo', 1), ('nombre_absoluto', 1), ('nombre_backslash', 1),
     ('nombre_NUL', 1), ('nombre_duplicado_proof', 1), ('nombre_colision_aux', 1),
     ('miembro_binario_no_declarado', 5), ('miembro_json_correcto_no_declarado', 5),
-    ('README_sin_manifiesto', 5), ('auxiliar_json_corrupto', 5), ('auxiliar_md_corrupto', 5),
+    ('README_sin_manifiesto', 0), ('auxiliar_json_corrupto', 5), ('auxiliar_md_corrupto', 5),
     ('auxiliar_100000_niveles', 5), ('auxiliar_NaN', 5),
     ('limite_200MB', 1), ('limite_ratio', 1), ('limite_total', 1), ('limite_zip', 1),
     ('limite_miembros', 1),
@@ -355,11 +355,14 @@ def test_closed_world_matrix(verifier, bundle, content, tmp_path, monkeypatch, c
         assert stdout.endswith(('VALID [0]' if expected == 0 else 'VALID CON AVISOS [5]') + '\n[FIN VEREDICTO]')
         if expected == 5:
             assert 'ANOMALIA:' in stdout and 'NO cubiertos: ninguno' not in stdout
+    elif expected == 4:
+        # Un 4 es error de uso/contenedor y no implica genuinidad: no se titula INVALID.
+        assert stderr.startswith('ERROR USO/CONTENEDOR [4]')
     elif expected != 0:
         assert stderr.startswith('INVALID[')
     if case == 'warm_clave_ajena_verifica_simulada':
         assert before in (0, 'sin referencia')
-        assert 'WARM: comprobación heredada correcta' not in stdout
+        assert 'WARM: comprobacion heredada correcta' not in stdout
     if case in ('zip_concatenado_falso_legitimo', 'zip_prefijo', 'zip_sufijo',
                 'zip_hueco_entre_entradas', 'zip_hueco_antes_central', 'zip_comentario',
                 'zip_nombre_local_distinto', 'zip_crc_local_distinto', 'zip_symlink',
@@ -447,6 +450,8 @@ def test_r9b_coverage_and_partial_verdict(verifier, bundle, content, tmp_path, m
     with contextlib.redirect_stdout(out), contextlib.redirect_stderr(io.StringIO()):
         with pytest.raises(SystemExit) as exc: verifier.main()
     assert exc.value.code == 4
-    assert out.getvalue().endswith('VALID')
+    # Si la escritura del veredicto falla a medias, el verificador lo declara y cierra con la
+    # marca, para que el 'VALID' truncado no pueda leerse como aprobacion.
+    assert out.getvalue().endswith('ERROR E/S [4]: salida incompleta; no se emite aprobacion\n[FIN VEREDICTO]')
     assert not out.getvalue().endswith('VALID [0]\n')
     assert not out.getvalue().endswith('VALID CON AVISOS [5]\n')

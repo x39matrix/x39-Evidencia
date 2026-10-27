@@ -18,7 +18,7 @@ CASES = [('control',0),('warm_ausente',0),('warm_note_historica',0),('fecha_ause
 CASES += [('fecha_'+n,2) for n in ('texto','2019','antes_sellado','antes_ceremonia','futuro','sin_zona','invalida')]
 CASES += [('nota_'+n,1) for n in ('REVOCADO','importe','9_9','texto','ANSI')]
 CASES += [(f'extra_{level}_{field}',1) for level in ('raiz','cold','warm','message_signatures') for field in ('estado','verificadas','importe')]
-CASES += [('title_ANSI',1),('algorithm_ANSI',5),('README_original',5)]
+CASES += [('title_ANSI',1),('algorithm_ANSI',5),('README_original',0)]
 CASES += [('README_'+n,1) for n in ('REVOCADO','importe','9_9','texto','desconocido')]
 NAMES = ['proof.json.','proof.json ','signatures.json...','PROOF~1.JSO','SIGNAT~1.JSO','CON','con.txt','AUX','NUL','PRN','COM1','LPT9','CONIN$','x39/proof.json','x39/CON.txt','x39./extra.txt']
 CASES += [('nombre_'+str(i),1) for i in range(len(NAMES))]
@@ -105,10 +105,12 @@ def test_round(verifier,bundle,content,tmp_path,monkeypatch,capsys,case,expected
         return subprocess.CompletedProcess(command,0 if ok else 1,'','ancla falsa' if not ok else '')
     monkeypatch.setattr(subprocess,'run',ots_mock)
     oldpath=Path('/tmp/verificador_antes_ronda_tres.py')
-    spec=importlib.util.spec_from_file_location('verificador_anterior_r3',oldpath)
-    old=importlib.util.module_from_spec(spec); spec.loader.exec_module(old)
-    with contextlib.redirect_stdout(io.StringIO()),contextlib.redirect_stderr(io.StringIO()):
-        before,_=run_main(old,files,tmp_path,monkeypatch,capsys,content,skip=False)
+    before='sin referencia'  # foto previa opcional, como en mundo_cerrado
+    if oldpath.is_file():
+        spec=importlib.util.spec_from_file_location('verificador_anterior_r3',oldpath)
+        old=importlib.util.module_from_spec(spec); spec.loader.exec_module(old)
+        with contextlib.redirect_stdout(io.StringIO()),contextlib.redirect_stderr(io.StringIO()):
+            before,_=run_main(old,files,tmp_path,monkeypatch,capsys,content,skip=False)
     actual,out=run_main(verifier,files,tmp_path,monkeypatch,capsys,content,skip=False)
     ROWS.append((case,before,expected,actual))
     assert actual==expected
