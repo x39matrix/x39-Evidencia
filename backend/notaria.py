@@ -29,7 +29,7 @@ from pydantic import BaseModel
 from pymongo import MongoClient
 from pqcrypto.sign import ml_dsa_87 as _mldsa
 
-from hwg.crypto import ots_stamp, ots_info_probe, ots_upgrade
+from hwg.crypto import ots_stamp, ots_info_probe, ots_upgrade, ots_prune_pending
 
 
 # ---------------------------------------------------------------------------
@@ -1129,7 +1129,9 @@ async def download_proof_ots(aid: str):
     a = na.find_one({"agreement_id": aid, "status": "sealed"}, {"_id": 0})
     if not a:
         raise HTTPException(404, "Prueba no disponible")
-    data = base64.b64decode(_require_ots_publicable(a)["ots_b64"])
+    # Se sirve podada (solo rutas Bitcoin): es lo que exige el perfil cerrado del verificador
+    # publicado. Mientras esta pendiente se sirve intacta. Lo guardado en Mongo no cambia.
+    data = ots_prune_pending(base64.b64decode(_require_ots_publicable(a)["ots_b64"]))
     return StreamingResponse(io.BytesIO(data), media_type="application/octet-stream",
                              headers={"Content-Disposition": f'attachment; filename="x39-prueba-{aid}.ots"'})
 
@@ -1284,7 +1286,7 @@ async def download_evidence_bundle(aid: str):
         raise HTTPException(404, "Evidencia no disponible")
     ots = _require_ots_publicable(a)
     payload = base64.b64decode(ots["payload_b64"])
-    ots_raw = base64.b64decode(ots["ots_b64"])
+    ots_raw = ots_prune_pending(base64.b64decode(ots["ots_b64"]))  # misma poda que /proof/{aid}.ots
     proof_hash = a["proof"]["proof_hash"]
     sigs = {
         "agreement_id": aid,

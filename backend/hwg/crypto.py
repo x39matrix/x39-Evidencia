@@ -150,6 +150,58 @@ async def ots_info_probe(sha256_hex: str, ots_b64: str,
     }
 
 
+def ots_prune_pending(ots_raw: bytes) -> bytes:
+    """Devuelve la prueba .ots con SOLO las rutas que terminan en una atestacion Bitcoin.
+
+    El verificador publicado (verify_bundle.py, perfil OTS cerrado de la tercera ronda)
+    rechaza con INVALID[3] cualquier .ots que conserve PendingAttestation o ramas sin hoja
+    Bitcoin, salvo los dos .ots fichados en su LEGACY_METADATA. `ots upgrade` nunca retira
+    esas hojas: mezcla la rama Bitcoin que devuelve cada calendario AL LADO de la pendiente,
+    asi que todo acuerdo anclado por este backend se servia fuera del perfil.
+
+    Esta funcion no consulta nada ni inventa nada: reconstruye el arbol desde el mismo
+    digest con las mismas operaciones y conserva TODAS las atestaciones Bitcoin tal cual
+    (todos los bloques, no solo el mas temprano). Es pura y determinista: mismos bytes de
+    entrada -> mismos bytes de salida, y podar lo ya podado no cambia nada.
+    - Sin ninguna atestacion Bitcoin (prueba aun pendiente): devuelve los bytes INTACTOS.
+    - Si la prueba no se puede leer: devuelve los bytes INTACTOS y lo deja en el diario.
+      NUNCA lanza: servir la prueba cruda (como hasta hoy) es mejor que un 500.
+    """
+    try:
+        import io
+        from opentimestamps.core.timestamp import Timestamp, DetachedTimestampFile
+        from opentimestamps.core.notary import BitcoinBlockHeaderAttestation
+        from opentimestamps.core.serialize import (BytesSerializationContext,
+                                                   StreamDeserializationContext)
+        detached = DetachedTimestampFile.deserialize(
+            StreamDeserializationContext(io.BytesIO(ots_raw)))
+        root = Timestamp(detached.file_digest)
+        found = False
+
+        def walk(node, ops):
+            nonlocal found
+            for att in node.attestations:
+                if type(att) is BitcoinBlockHeaderAttestation:
+                    leaf = root
+                    for op in ops:
+                        leaf = leaf.ops.add(op)
+                    leaf.attestations.add(att)
+                    found = True
+            for op, child in node.ops.items():
+                walk(child, ops + [op])
+
+        walk(detached.timestamp, [])
+        if not found:
+            return ots_raw
+        ctx = BytesSerializationContext()
+        DetachedTimestampFile(detached.file_hash_op, root).serialize(ctx)
+        return ctx.getbytes()
+    except Exception as e:
+        print(f"[OTS] AVISO: poda de la prueba no aplicada ({type(e).__name__}: {e}); "
+              "se sirve intacta.", flush=True)
+        return ots_raw
+
+
 async def ots_upgrade(sha256_hex: str, ots_b64: str,
                       payload: bytes, timeout: int = 60) -> Tuple[str, Dict[str, Any]]:
     """Attempt `ots upgrade` on a pending proof. Returns (new_ots_b64, info_probe).
