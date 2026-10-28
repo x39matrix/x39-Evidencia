@@ -126,7 +126,7 @@ pip install pytest
 python3 -m pytest tests/
 ```
 
-Expected: every test passes (494 as of commit `65a9b89c`). Node.js is needed by the
+Expected: every test passes (534 as of commit `d335bd2c`). Node.js is needed by the
 tests that compare the Python verifier with the JavaScript ZIP reference.
 
 ## Links

@@ -113,7 +113,7 @@ def test_three_copies_identical():
     from test_verificador_estricto import ROOT
     canonical = (ROOT / 'verify_bundle.py').read_bytes()
     # public/ es obligatoria (se versiona). build/ es artefacto de compilacion, no
-    # versionado desde 8fda46b5: en un clon limpio no existe; si existe, debe coincidir.
+    # versionado desde 7f662492: en un clon limpio no existe; si existe, debe coincidir.
     assert (ROOT / 'frontend/public/verify_bundle.py').read_bytes() == canonical
     build = ROOT / 'frontend/build/verify_bundle.py'
     if build.is_file():
