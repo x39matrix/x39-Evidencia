@@ -17,7 +17,12 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 AID = "488a053fbd4874193a1e"
-BASE = "https://x39matrix.org"
+# Como en produccion: la API (REACT_APP_BACKEND_URL) y la web (X39_WEB_BASE) son hosts
+# distintos. Certificado, verificador e imagen OG viven en la WEB; og:url es la API, que
+# es quien sirve esta pagina. Con los dos iguales, un enlace a la API (404) no se veria.
+API = "https://api.x39matrix.org"
+WEB = "https://x39matrix.org"
+RESPALDO = "https://x39matrix.org"  # valor del codigo si la variable falta o esta vacia
 ATTACK = '\"><img src=x onerror="probe()"><script>probe()</script>&'
 
 
@@ -70,7 +75,7 @@ def render():
     code = compile(ast.fix_missing_locations(ast.Module(body=imports + safe + functions,
                                                         type_ignores=[])), "public_html", "exec")
 
-    def call(*, changes=None, block=None, aid=AID, base=BASE, exists=True):
+    def call(*, changes=None, block=None, aid=AID, base=API, web=WEB, exists=True):
         doc = {"title": "Acuerdo de prueba", "content_hash": "a" * 64,
                "proof": {"proof_hash": "b" * 64}, "sealed_at": "2026-09-08T16:14:47+00:00"}
         for name, value in (changes or {}).items():
@@ -89,7 +94,12 @@ def render():
             refreshes.append(item)
             return {"status": "anchored_btc" if block is not None else "pending", "btc_block": block}
 
-        ns = {"re": re, "os": SimpleNamespace(environ={} if base is None else {"REACT_APP_BACKEND_URL": base}),
+        environ = {}
+        if base is not None:
+            environ["REACT_APP_BACKEND_URL"] = base
+        if web is not None:
+            environ["X39_WEB_BASE"] = web
+        ns = {"re": re, "os": SimpleNamespace(environ=environ),
               "na": SimpleNamespace(find_one=find), "_refresh_ots": refresh,
               "Request": object, "HTTPException": MissingProof, "HTMLResponse": lambda body: body}
         exec(code, ns)
@@ -110,13 +120,13 @@ def render():
 @pytest.mark.parametrize("block", [None, 966105], ids=["pendiente", "confirmado"])
 def test_pagina_normal_conserva_datos_y_enlaces(render, block):
     html, page = render(block=block)
-    assert page.meta("og:url") == f"{BASE}/api/notaria/p/{AID}"
-    assert page.meta("og:image") == f"{BASE}/og_notaria.jpg"
+    assert page.meta("og:url") == f"{API}/api/notaria/p/{AID}"
+    assert page.meta("og:image") == f"{WEB}/og_x39_evidencia.jpg"
     assert page.meta("og:title") == "X-39 Notaria — Acuerdo de prueba"
     assert page.meta("twitter:title") == page.meta("og:title")
     assert page.meta("twitter:description") == page.meta("og:description")
     assert page.meta("twitter:image") == page.meta("og:image")
-    expected = [f"{BASE}/certificado/{AID}", f"{BASE}/verificar"]
+    expected = [f"{WEB}/certificado/{AID}", f"{WEB}/verificar"]
     if block is not None:
         expected.insert(0, "https://mempool.space/block/966105")
         assert "Confirmado en bloque Bitcoin #966105" in "".join(page.text)
@@ -124,6 +134,9 @@ def test_pagina_normal_conserva_datos_y_enlaces(render, block):
         assert "Pendiente de confirmacion" in "".join(page.text)
         assert "mempool.space/block/" not in html
     assert page.hrefs() == expected
+    # Regresion: certificado, verificador e imagen en la API daban 404.
+    assert not any(href.startswith(API) for href in page.hrefs())
+    assert not page.meta("og:image").startswith(API)
     assert "a" * 64 in page.text and "b" * 64 in page.text
     assert "2026-09-08T16:14:47+00:00" in page.text
     assert "evil.invalid" not in html
@@ -168,26 +181,43 @@ def test_id_malformado_no_sale_del_segmento_ni_abre_atributos(render):
     _, page = render(aid=ATTACK + "?x=1#fragmento")
     assert page.shape() == normal.shape()
     cert = page.hrefs()[0]
-    assert cert.startswith(BASE + "/certificado/")
+    assert cert.startswith(WEB + "/certificado/")
     assert not any(char in cert for char in '\"<>?&#')
     assert page.meta("og:url").split("/api/notaria/p/", 1)[1] == cert.split("/certificado/", 1)[1]
 
 
-@pytest.mark.parametrize("base", [None, "", BASE + "/", BASE + "///"])
-def test_base_por_defecto_y_barras_finales(render, base):
+@pytest.mark.parametrize("base", [None, "", API + "/", API + "///"])
+def test_api_por_defecto_y_barras_finales(render, base):
     _, page = render(base=base)
-    assert page.hrefs() == [f"{BASE}/certificado/{AID}", f"{BASE}/verificar"]
-    assert page.meta("og:url") == f"{BASE}/api/notaria/p/{AID}"
+    origen = RESPALDO if not base else API
+    assert page.meta("og:url") == f"{origen}/api/notaria/p/{AID}"
+    # Los enlaces no dependen de la API.
+    assert page.hrefs() == [f"{WEB}/certificado/{AID}", f"{WEB}/verificar"]
 
 
-def test_base_configurada_no_inyecta_atributos(render):
-    base = 'https://example.test/" onload="probe()&quot;'
+@pytest.mark.parametrize("web", [None, "", WEB + "/", WEB + "///"])
+def test_web_por_defecto_y_barras_finales(render, web):
+    _, page = render(web=web)
+    origen = RESPALDO if not web else WEB
+    assert page.hrefs() == [f"{origen}/certificado/{AID}", f"{origen}/verificar"]
+    assert page.meta("og:image") == f"{origen}/og_x39_evidencia.jpg"
+    assert page.meta("og:url") == f"{API}/api/notaria/p/{AID}"
+
+
+@pytest.mark.parametrize("variable", ["api", "web"])
+def test_origen_configurado_no_inyecta_atributos(render, variable):
+    ataque = 'https://example.test/" onload="probe()&quot;'
     _, normal = render()
-    _, page = render(base=base)
+    _, page = render(**{"base" if variable == "api" else "web": ataque})
     assert page.shape() == normal.shape()
-    assert page.hrefs() == [f"{base}/certificado/{AID}", f"{base}/verificar"]
-    assert page.meta("og:url") == f"{base}/api/notaria/p/{AID}"
-    assert page.meta("og:image") == f"{base}/og_notaria.jpg"
+    if variable == "api":
+        assert page.meta("og:url") == f"{ataque}/api/notaria/p/{AID}"
+        assert page.hrefs() == [f"{WEB}/certificado/{AID}", f"{WEB}/verificar"]
+        assert page.meta("og:image") == f"{WEB}/og_x39_evidencia.jpg"
+    else:
+        assert page.meta("og:url") == f"{API}/api/notaria/p/{AID}"
+        assert page.hrefs() == [f"{ataque}/certificado/{AID}", f"{ataque}/verificar"]
+        assert page.meta("og:image") == f"{ataque}/og_x39_evidencia.jpg"
 
 
 def test_ausente_conserva_404_sin_refrescar(render):
