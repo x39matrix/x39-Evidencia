@@ -54,7 +54,7 @@ CASES = [
     ('falta_cadena_v3_manifiesto', 1),
     ('proof_vacio', 1), ('proof_byte_alterado', 1), ('proof_crc_alterado', 1), ('proof_hash_mayusculas', 1),
     ('cold_fingerprint_mayusculas', 2), ('ots_vacio', 3), ('ots_ajeno', 3),
-    ('sin_content', 4), ('documento_equivocado', 1), ('content_directorio', 4),
+    ('sin_content', 5), ('documento_equivocado', 1), ('content_directorio', 4),
     ('skip_ots', 3), ('signatures_ilegible', 1), ('cold_ausente', 6), ('cold_corrupta', 2),
     ('v1_cadena_inventada', 1),
     ('chain_content_hash_delimitador', 1), ('chain_content_hash_corto', 1),
@@ -354,7 +354,13 @@ def test_closed_world_matrix(verifier, bundle, content, tmp_path, monkeypatch, c
     if expected in (0, 5) and phase == 'CLI':
         assert stdout.endswith(('VALID [0]' if expected == 0 else 'VALID CON AVISOS [5]') + '\n[FIN VEREDICTO]')
         if expected == 5:
-            assert 'ANOMALIA:' in stdout and 'NO cubiertos: ninguno' not in stdout
+            assert 'ANOMALIA:' in stdout
+            # 30/10/2026: 'sin_content' es un 5 con cobertura completa (la anomalia es el
+            # documento no comprobado, no un fichero sin cubrir).
+            if case == 'sin_content':
+                assert 'DOCUMENTO NO COMPROBADO' in stdout
+            else:
+                assert 'NO cubiertos: ninguno' not in stdout
     elif expected == 6 and phase == 'CLI':
         # COLD ausente (no mala) con todo lo demas correcto: CONSISTENTE, nunca VALID.
         assert stdout.endswith('CONSISTENTE [6]\n[FIN VEREDICTO]') and not stderr

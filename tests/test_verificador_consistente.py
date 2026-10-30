@@ -64,11 +64,14 @@ def test_cold_ausente_documento_alterado_es_1(verifier, bundle, content, tmp_pat
     assert 'CONSISTENTE [6]' not in out.out
 
 
-def test_cold_ausente_sin_content_es_4(verifier, bundle, tmp_path, monkeypatch, capsys):
+def test_cold_ausente_sin_content_es_6(verifier, bundle, tmp_path, monkeypatch, capsys):
+    # 30/10/2026: sin --content no es error de uso; es el caso normal de un tercero.
+    # Ancla correcta y sin COLD -> CONSISTENTE, con la anomalia de documento no comprobado.
     ots_ok(monkeypatch)
     code, out = run_main(verifier, sin_cold(bundle), tmp_path, monkeypatch, capsys, None, skip=False)
-    assert code == 4 and 'DOCUMENTO NO COMPROBADO' in out.err
-    assert 'CONSISTENTE [6]' not in out.out
+    assert code == 6 and 'DOCUMENTO NO COMPROBADO' in out.out
+    assert 'CONSISTENTE [6]' in out.out and 'VALID [0]' not in out.out
+    assert 'ERROR USO/CONTENEDOR' not in out.err
 
 
 def test_cold_ausente_con_warm_rota_sigue_consistente_con_anomalia(verifier, bundle, content, tmp_path, monkeypatch, capsys):

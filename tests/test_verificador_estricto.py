@@ -121,9 +121,13 @@ def test_negatives(verifier, bundle, content, tmp_path, monkeypatch, capsys, cas
 
 
 def test_no_document(verifier, bundle, tmp_path, monkeypatch, capsys):
+    # 30/10/2026: sin --content ya no es error de uso (4). Con --skip-ots (por defecto
+    # en run_main) el veredicto lo decide el OTS no comprobado (3); la falta de documento
+    # se anuncia como anomalia, no como error.
     code, output = run_main(verifier, bundle, tmp_path, monkeypatch, capsys)
-    assert code == 4
-    assert 'ERROR USO/CONTENEDOR [4]: DOCUMENTO NO COMPROBADO' in output.err
+    assert code == 3
+    assert 'DOCUMENTO NO COMPROBADO' in output.out
+    assert 'ERROR USO/CONTENEDOR' not in output.err
 
 
 def test_skip_ots_never_approves(verifier, bundle, content, tmp_path, monkeypatch, capsys):

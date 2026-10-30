@@ -1028,9 +1028,12 @@ def verify_signatures(proof_bytes: bytes, sigs_raw: bytes,
     return notes, cold_fp
 
 
-def verify_content_hash(proof: dict[str, Any], content_path: Path | None) -> None:
+def verify_content_hash(proof: dict[str, Any], content_path: Path | None) -> str | None:
+    """Sin --content no es error de uso: es el caso normal de un tercero.
+    Devuelve una anomalia textual (el veredicto no puede ser VALID limpio) o None."""
     if content_path is None:
-        die(EXIT_IO, "DOCUMENTO NO COMPROBADO: indica --content con el documento original")
+        return ("DOCUMENTO NO COMPROBADO: sin --content; content_hash no contrastado "
+                "con ningun fichero")
     if not content_path.is_file():
         die(EXIT_IO, f"documento no encontrado: {terminal_text(content_path)}")
     digest = hashlib.sha256()
@@ -1044,6 +1047,7 @@ def verify_content_hash(proof: dict[str, Any], content_path: Path | None) -> Non
     claimed = proof.get("content_hash")
     if computed != claimed:
         die(EXIT_INTEGRITY, f"content_hash mismatch: proof={terminal_text(claimed)} file={terminal_text(computed)}")
+    return None
 
 
 def verify_chat_chain_v2(files: dict[str, bytes], proof: dict[str, Any]) -> None:
@@ -1488,7 +1492,9 @@ def _main() -> None:
     notes, cold_fp = result if result is not None else ([], None)
     # COLD ausente: verify_signatures no muere y devuelve cold_fp None (presente e invalida muere con 2).
     cold_missing = result is not None and cold_fp is None
-    stage(verify_content_hash, proof, args.content)
+    content_anomaly = stage(verify_content_hash, proof, args.content)
+    if content_anomaly:
+        anomalies.append(content_anomaly)
     anomalies.extend(auxiliary_parse_anomalies(files, proof, uncovered))
     for name in ("proof.json", "signatures.json"):
         if any(a.startswith((name + ":", name + ".", name + " /", "\'" + name + "\':")) for a in anomalies):
@@ -1554,8 +1560,13 @@ def _main() -> None:
     emit("  COLD NO autentica: signatures.json (titulo y campos cruzados solo contrastados), "
           "metadatos COLD/WARM externos, nombre/fecha del fichero original, "
           "campos extra de chat_chain.json ni ficheros fuera de proof.files")
-    emit("  documento: SHA-256 de --content contrastado con content_hash"
-         + (" (sin atestacion COLD)" if cold_missing else " autenticado por COLD"))
+    if args.content is None:
+        emit("  documento: NO COMPROBADO (sin --content); content_hash "
+             + ("sin atestacion COLD" if cold_missing else "autenticado por COLD")
+             + ", no contrastado con el original")
+    else:
+        emit("  documento: SHA-256 de --content contrastado con content_hash"
+             + (" (sin atestacion COLD)" if cold_missing else " autenticado por COLD"))
     verificados = {"proof.json"}
     parciales = {"signatures.json"}
     if "README.md" in files and "README.md" not in (proof.get("files") or {}):
