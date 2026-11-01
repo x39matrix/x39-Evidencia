@@ -10,9 +10,7 @@ const DEMO_CERT_ID = '31e1cf09a5b2a74cd978';
 const REPO = 'https://github.com/x39matrix/x39-Evidencia';
 const BUNDLE_TAG = 'bundle-v1.1';
 const BUNDLE_RELEASE = `${REPO}/releases/tag/${BUNDLE_TAG}`;
-const BUNDLE_VERIFIER = `${REPO}/blob/${BUNDLE_TAG}/verify_bundle_v1_1.py`;
 const BUNDLE_VALID = `${REPO}/releases/download/${BUNDLE_TAG}/VALID_nodo-propio_20261012.txt`;
-const SEVILLA = 'https://sevilla.x39matrix.org';
 const STEP_ICONS = [FileText, PenLine, Anchor];
 const LINK = { color: 'var(--seal)', textDecoration: 'underline' };
 
@@ -185,12 +183,15 @@ export default function Landing() {
             <li>
               <a href={BUNDLE_RELEASE} target="_blank" rel="noreferrer" style={LINK} data-testid="proofs-bundle">{t('landing.proofsBundle')}</a>
               <span className="nt-mono" style={{ fontSize: 12, marginInlineStart: 8 }}>
-                <a href={BUNDLE_VERIFIER} target="_blank" rel="noreferrer" style={LINK}>verify_bundle_v1_1.py</a>
-                {' · '}
                 <a href={BUNDLE_VALID} target="_blank" rel="noreferrer" style={LINK}>VALID</a>
               </span>
             </li>
-            <li><a href={SEVILLA} target="_blank" rel="noreferrer" style={LINK} data-testid="proofs-sevilla">{t('landing.proofsSevilla')}</a></li>
+            <li>
+              <a href="/verify_bundle.py" style={LINK} data-testid="proofs-verifier">verify_bundle.py</a>
+              <span className="nt-mono" style={{ fontSize: 12, marginInlineStart: 8 }}>
+                SHA-256 340f9d686270f38697af88303cfa0032e67f2cf8ab8c7a9e73cb166c9a1e5648
+              </span>
+            </li>
           </ul>
           <h3 style={{ fontSize: 15, margin: '0 0 4px' }}>{t('landing.leavesT')}</h3>
           <p className="nt-note" style={{ fontSize: 14, maxWidth: '70ch', margin: '0 0 12px' }} data-testid="landing-leaves">{t('landing.leaves')}</p>
