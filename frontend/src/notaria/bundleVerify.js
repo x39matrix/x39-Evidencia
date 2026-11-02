@@ -2,7 +2,8 @@
 // Espejo del verificador de referencia verify_bundle.py:
 //   integridad, consistencia, cadena de chat (v2/v3), firmas Ed25519 por mensaje (v3),
 //   firmas ML-DSA-87 COLD/WARM (noble, FIPS-204). El ancla OTS NO se verifica aqui
-//   (requiere nodo Bitcoin): se informa honestamente, nunca se pinta verde sin verificar.
+//   (requiere nodo Bitcoin). Por eso este verificador no emite VALIDA en ningun caso:
+//   su techo es CONSISTENTE. La aprobacion la da verify_bundle.py contra un nodo propio.
 import JSZip from 'jszip';
 import { ml_dsa87 } from '@noble/post-quantum/ml-dsa.js';
 import { ed25519 } from '@noble/curves/ed25519.js';
@@ -130,6 +131,9 @@ export async function verifyBundle(file) {
 
   const otsFile = zip.file('proof.json.ots');
   if (otsFile) report.otsBytes = (await otsFile.async('uint8array')).length;
+  // El ancla no se puede verificar en el navegador, pero su AUSENCIA si se detecta:
+  // un bundle sin proof.json.ots no tiene ancla que verificar despues, en ningun sitio.
+  add('ots_present', !!otsFile, { bytes: report.otsBytes, unverified: true });
 
   // El veredicto lo deciden solo los checks NO informativos (WARM queda fuera).
   // Sin co-firma COLD pineada, lo unico que se ha comprobado es que el bundle es coherente
@@ -138,6 +142,8 @@ export async function verifyBundle(file) {
   // que omita el bloque cold no debe salir en verde.
   const scored = report.checks.filter((c) => !c.informative);
   const allOk = scored.length > 0 && scored.every((c) => c.ok);
-  report.verdict = allOk ? (report.noCold ? 'consistent' : 'valid') : 'fail';
+  // El ancla Bitcoin NUNCA se verifica aqui: el techo del navegador es 'consistente'.
+  // 'valid' se reserva al verificador de referencia ejecutado contra un nodo propio.
+  report.verdict = allOk ? (report.noCold ? 'consistent_nocold' : 'consistent') : 'fail';
   return report;
 }
