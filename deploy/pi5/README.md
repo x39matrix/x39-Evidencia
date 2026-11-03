@@ -1,6 +1,6 @@
-# X-39 Notaría API — despliegue en la Pi 5
+# X-39 Evidencia API — despliegue en la Pi 5
 
-- **Código**: `/opt/x39/api` (checkout git, rama `textos-honestos`, propietario `x39api`). Commits en la Pi con `sudo -u x39api git …`; traer a WSL con `git pull --rebase x39pi@192.168.1.46:/opt/x39/api textos-honestos`.
+- **Código**: `/opt/x39/api` (checkout git, rama `textos-honestos`, propietario `x39api`). Commits en la Pi con `sudo -u x39api git …`; traer a WSL con `git pull --rebase` desde la Pi por SSH (ruta `/opt/x39/api`, rama `textos-honestos`).
 - **Servicio**: `x39-api.service` (copia en esta carpeta). uvicorn en 127.0.0.1:8000 con `--proxy-headers --forwarded-allow-ips=127.0.0.1`. Secretos en `/etc/x39/api.env` (root:x39api, 640).
 - **Proxy**: Caddy nativo, `/etc/caddy/Caddyfile` (copia aquí). Oculta /docs, /redoc y /openapi.json; `/api/notaria/admin/*` solo desde localhost; tope de cuerpo 20 MB; sin cabecera Server. Los logs de acceso están desactivados. X-Forwarded-For solo se entrega a Uvicorn por loopback para limitar peticiones por IP en memoria; no se guarda en los documentos de Mongo.
 - **Mongo**: contenedor `x39-mongo` (mongo:7) publicado solo en 127.0.0.1:27017.
