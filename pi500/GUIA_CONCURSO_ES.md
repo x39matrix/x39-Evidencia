@@ -1,21 +1,37 @@
-# X-39 Notaría — Guía completa del flujo COLD con Raspberry Pi 500
+# X-39 Notaría — Guía histórica de preparación del flujo COLD con Raspberry Pi 500
 
-Documento para leer HOY, antes de que llegue el Pi. Todo lo necesario para la clave
-soberana air-gapped ML-DSA-87. Producción: https://api.x39matrix.org
+Esta guía describe la preparación prevista antes de la ceremonia del 16/07/2026.
+La secuencia se conserva como antecedente, no como procedimiento operativo vigente.
+No ejecutar sus pasos de instalación, generación o registro sobre la instalación
+actual ni sustituir la clave existente siguiendo este borrador. Los marcadores
+`<AID>`, `$API` y `$ADMIN` de los ejemplos no son valores listos para ejecutar.
+
+El registro de la ceremonia y de la retirada de WARM está en
+[`RUNBOOK_CEREMONIA_COLD.md`](RUNBOOK_CEREMONIA_COLD.md); las condiciones de
+rotación están en [`POLITICA_HUELLAS_COLD.md`](POLITICA_HUELLAS_COLD.md). Estos
+enlaces son referencias documentales, no una nueva verificación del despliegue.
 
 ====================================================================
 QUÉ ES ESTO Y POR QUÉ
 ====================================================================
-La notaría firma cada acuerdo con ML-DSA-87 (post-cuántico, FIPS-204) en DOS niveles:
-  - WARM (ya activo): clave en el servidor. Firma automática al sellar.
-  - COLD (esto): clave generada y guardada en el Pi 500 SIN RED. Nunca toca internet.
+Estado documentado del flujo de firmas:
+  - WARM: retirada el 16/07/2026 (SEC-003). El sellado ya no genera esa firma
+    automática; las firmas históricas conservan su clave pública para verificarse.
+  - COLD: co-firma opcional ML-DSA-87, producida por el firmante separado. No todos
+    los acuerdos sellados llevan una co-firma COLD. El servidor la verifica contra
+    la huella pública fijada en el código.
 
-El servidor SOLO verifica la firma COLD; la clave privada (sk) jamás sale del Pi.
-Esto elimina la última vulnerabilidad (clave en disco) y da la "prueba física de
-soberanía" que suma ante el jurado del concurso.
+Mantener la clave privada fuera del servidor reduce su exposición si ese servidor
+es comprometido. No elimina las demás vulnerabilidades: siguen importando la
+seguridad del firmante, los USB, los respaldos y la revisión del contenido firmado.
+Una firma válida vincula el payload con una clave; no demuestra por sí sola el
+aislamiento físico del equipo, la identidad de una persona ni la verdad del documento.
 
-Regla de oro: la sk NUNCA se conecta, nunca se sube, nunca se envía por chat.
-Solo cruzan datos PÚBLICOS: la pubkey y las firmas.
+La custodia prevista mantiene la clave y sus respaldos cifrados fuera de equipos
+con red. La clave privada no se sube al servidor ni se envía por chat. Al equipo
+conectado solo se trasladan la clave pública y las firmas.
+
+## Secuencia histórica (no ejecutar como procedimiento vigente)
 
 ====================================================================
 QUÉ NECESITAS (checklist físico)
@@ -75,22 +91,18 @@ Copia al USB SNEAKERNET: mldsa87.pk (la pública, para registrarla online).
 ====================================================================
 FASE 2 — REGISTRAR LA PUBKEY (ONLINE)
 ====================================================================
-Lleva mldsa87.pk (SNEAKERNET) a una máquina con red. Dos opciones:
+El borrador proponía registrar la clave a través del dominio público o delegar el
+registro en un agente. Esas instrucciones se retiran: el Caddy del repositorio
+restringe `/api/notaria/admin/*` a localhost y el backend solo admite la huella
+`COLD_FP_PINNED`. Un POST administrativo no permite sustituir esa autoridad.
 
-Opción A (recomendada, sin exponer el token):
-    Pega en el chat con el agente el CONTENIDO de mldsa87.pk + el fingerprint.
-    El agente lo registra en producción con el token del servidor (nunca se expone).
+El registro corresponde al operador autorizado, sin compartir su token con un
+agente. Para una clave nueva se requiere la ceremonia y el cambio versionado que
+establece `POLITICA_HUELLAS_COLD.md`, no repetir este alta inicial.
 
-Opción B (tú mismo, si tienes el HWG_ADMIN_TOKEN de producción):
-    API=https://api.x39matrix.org
-    ADMIN=<HWG_ADMIN_TOKEN>
-    PK=$(cat mldsa87.pk)
-    curl -s -X POST "$API/api/notaria/admin/cold_key" \
-      -H "X-Admin-Token: $ADMIN" -H "Content-Type: application/json" \
-      -d "{\"public_key_b64\":\"$PK\"}"
-    curl -s "$API/api/notaria/cold_key"    # el fingerprint DEBE coincidir con Fase 1
-
-Si el fingerprint online != el de Fase 1 -> el USB corrompió algo. Aborta y repite.
+Una huella distinta exige detenerse y comprobar el origen de la clave y del
+fichero. No demuestra por sí sola corrupción del USB: puede ser otra clave o una
+sustitución.
 
 ====================================================================
 FASE 3 — CO-FIRMAR UN ACUERDO SELLADO (SNEAKERNET)
@@ -109,7 +121,7 @@ FASE 3 — CO-FIRMAR UN ACUERDO SELLADO (SNEAKERNET)
    - Re-verifica la firma offline y genera sig.b64.
    Lleva sig.b64 al online con el USB SNEAKERNET.
 
-3. ONLINE: sube la firma (Opción A: pásasela al agente; Opción B: tú mismo):
+3. ONLINE: subida por el operador autorizado (ejemplo histórico; no compartir el token):
        SIG=$(cat sig.b64)
        curl -s -X POST "$API/api/notaria/agreements/<AID>/cold_signature" \
          -H "X-Admin-Token: $ADMIN" -H "Content-Type: application/json" \
@@ -124,7 +136,7 @@ También aparece en el certificado PDF y en el verificador independiente de la w
 El bundle de evidencia (.zip) incluirá la firma COLD en signatures.json.
 
 ====================================================================
-DATOS TÉCNICOS EXACTOS (para el pitch, todos verdaderos)
+PARÁMETROS DEL FLUJO DESCRITO (no certifican la instalación actual)
 ====================================================================
     Algoritmo:   ML-DSA-87 (FIPS-204) — Dilithium nivel 5, categoría de seguridad máxima
     Pubkey:      2592 bytes
@@ -138,6 +150,9 @@ SI ALGO SALE MAL
 - "passphrase incorrecta": la sk está cifrada; teclea la que apuntaste en Fase 1.
 - 400 al subir la firma: el payload que firmaste no es el anclado. Vuelve a descargar
   proof-<AID>.json y repite Fase 3. No toques la clave.
-- Perdiste la sk: generas otra (Fase 1) y la re-registras (Fase 2). Las co-firmas
-  antiguas siguen verificándose con la pubkey vieja; las nuevas usan la nueva.
+- Perdiste la sk: comprobar primero la existencia de un respaldo cifrado válido
+  y su passphrase. Si no es recuperable, una clave nueva requiere la ceremonia y
+  los cambios versionados de POLITICA_HUELLAS_COLD.md. No basta con generarla y
+  registrarla: el backend rechaza una huella distinta de COLD_FP_PINNED. Conservar
+  las claves públicas históricas para poder verificar las firmas anteriores.
 - NUNCA reconectes el Pi a la red "para ir más rápido". Eso anula todo el propósito.

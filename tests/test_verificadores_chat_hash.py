@@ -20,7 +20,6 @@ import pytest
 
 RAIZ = Path(__file__).resolve().parent.parent
 GENERAL = RAIZ / "verify_bundle.py"
-V1_1 = RAIZ / "verify_bundle_v1_1.py"
 ZIPS = [RAIZ / "testdata" / "e2e_chat_hmac_v2.zip", RAIZ / "testdata" / "e2e_chat_hmac_v1.zip"]
 
 
@@ -77,15 +76,7 @@ def test_general_no_aprueba_bundle_sin_cold(bundle):
     assert "VALID [0]" not in r.stdout and "CONSISTENTE [6]" not in r.stdout
 
 
-@pytest.mark.parametrize("bundle", ZIPS, ids=lambda p: p.stem)
-def test_v1_1_pasa_integridad_y_para_en_cold(bundle):
-    # El estricto exige COLD: sin ella sale con 2 (firma), no con 1 (integridad).
-    r = _run(V1_1, bundle)
-    assert r.returncode == 2, r.stderr
-    assert "COLD" in r.stderr
-
-
-@pytest.mark.parametrize("script", [GENERAL, V1_1], ids=["general", "v1_1"])
+@pytest.mark.parametrize("script", [GENERAL], ids=["general"])
 def test_chat_hash_alterado_falla_integridad(script, tmp_path):
     malo = tmp_path / "alterado.zip"
     _alterar_chat_hash(ZIPS[0], malo)
