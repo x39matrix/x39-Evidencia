@@ -3,28 +3,28 @@ import { Link } from 'react-router-dom';
 import { Nav } from './Nav';
 import { useLang } from './i18n';
 
-// Página de X-39 Evidencia para Android (release 0.3.4). El APK y sus ficheros de verificación se sirven
+// Página de X-39 Evidencia para Android (release 0.3.5). El APK y sus ficheros de verificación se sirven
 // desde /app/ en este mismo dominio; /app/x39.apk es una copia del APK actual para el enlace antiguo.
-// La 0.3.3 se mantiene como versión anterior durante una release más.
-const APK = 'x39-0.3.4-release.apk';
-const APK_SHA256 = '9c9d654cc9712c60e2803f1bf424fcf2bf409141c4a7d0f43eaa37b67b2d45ef';
-const APK_BYTES = '6 338 904 bytes';
-const CERT_SHA256 = '72f0745f993605b1b3cd30966162b6d98d84fcacbd23e2e07e24c3d15f7d8935';
-const RELEASE = 'https://github.com/x39matrix/x39-Evidencia/releases/tag/evidencia-0.3.4';
-// Ancla OpenTimestamps confirmada y comprobada contra nodo propio (12/10/2026).
-const BTC_BLOCK = '971111';
-const BTC_BLOCK_HASH = '0000000000000000000060b2bffe888dd78493ead194f380b71f60d120589cd9';
+// La 0.3.4 se mantiene como versión anterior durante una release más.
+const APK = 'x39-0.3.5-release.apk';
+const APK_SHA256 = '6e8073201b8abf623350223fa95c58e018e13f08b8a6e95f4925c8c642e2a3c6';
+const APK_BYTES = '6 327 111 bytes';
+const CERT_SHA256 = '8d46f850509ebfd4778156195c14bb69719dd09f799a4fb661b940e7e2b22fbe';
+const RELEASE = 'https://github.com/x39matrix/x39-Evidencia/releases/tag/evidencia-0.3.5';
+// Ancla OpenTimestamps confirmada y comprobada contra nodo propio (07/11/2026).
+const BTC_BLOCK = '974912';
+const BTC_BLOCK_HASH = '00000000000000000000c7df95b473b17aa2f75fda58ab56a875c613e2577a96';
 const VERIF = [`${APK}.sha256`, `${APK}.ots`, `${APK}.tsr`, `${APK}.cadena.pem`, `${APK}.sello.txt`, 'anf_root.pem'];
 const CMDS = [
   `sha256sum ${APK}`,
   `apksigner verify --print-certs ${APK}`,
   `openssl ts -verify -data ${APK} -in ${APK}.tsr -CAfile anf_root.pem -untrusted ${APK}.cadena.pem`,
   `ots verify ${APK}.ots`,
-  `# → Success! Bitcoin block ${BTC_BLOCK} attests existence as of 2026-10-12 15:26:58 UTC (in your local time)`,
+  `# → Success! Bitcoin block ${BTC_BLOCK} attests existence as of 2026-11-07 08:40:18 UTC (in your local time)`,
 ].join('\n');
-const PREV_APK = 'x39-0.3.3-release.apk';
-const PREV_SHA256 = '4c5c3a321a97f8bb45a83b5f8c878d27608b23499921df52fa079212ef330f03';
-const PREV_RELEASE = 'https://github.com/x39matrix/x39-Evidencia/releases/tag/evidencia-0.3.3';
+const PREV_APK = 'x39-0.3.4-release.apk';
+const PREV_SHA256 = '9c9d654cc9712c60e2803f1bf424fcf2bf409141c4a7d0f43eaa37b67b2d45ef';
+const PREV_RELEASE = 'https://github.com/x39matrix/x39-Evidencia/releases/tag/evidencia-0.3.4';
 
 const P = { fontSize: 14, lineHeight: 1.6, margin: '0 0 12px' };
 const H2 = { fontSize: 20, fontWeight: 600, margin: '24px 0 10px' };

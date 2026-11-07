@@ -3,7 +3,7 @@
 X-39 Evidencia is a proof-of-existence layer for documents.
 
 > [!WARNING]
-> **Status: test release.** X-39 Evidencia 0.3.4 is a test version, not the final one. It has not been audited by any independent third party; that audit is pending. The verifier has passed internal, reproducible tests. Do not rely on this build for critical use.
+> **Status: test release.** X-39 Evidencia 0.3.5 is a test version, not the final one. It has not been audited by any independent third party; that audit is pending. The verifier has passed internal, reproducible tests. Do not rely on this build for critical use.
 > This applies to the app, not to the evidence it produces: a Bitcoin anchor or an ANF qualified timestamp, once issued, is real and anyone can verify it.
 > Every release publishes its APK SHA-256, signing-certificate fingerprint, qualified timestamp and `.ots` proof, so you can check the evidence yourself instead of trusting this notice.
 
@@ -132,7 +132,7 @@ tests that compare the Python verifier with the JavaScript ZIP reference.
 ## Links
 
 - **Web:** <https://x39matrix.org>. Public verifier: <https://x39matrix.org/verificar>.
-- **Android app (X-39 Evidencia 0.3.4, test release, not audited):** [Releases](https://github.com/x39matrix/x39-Evidencia/releases). Each release lists the APK SHA-256, the signing-certificate fingerprint, the qualified timestamp and the `.ots` proof.
+- **Android app (X-39 Evidencia 0.3.5, test release, not audited):** [Releases](https://github.com/x39matrix/x39-Evidencia/releases). Each release lists the APK SHA-256, the signing-certificate fingerprint, the qualified timestamp and the `.ots` proof.
 - **Demo seal:** [`testdata/bundle_v1_prod.zip`](testdata/bundle_v1_prod.zip), agreement `demo0000demo0001`, SHA-256 `a648c11a00e3420e27e2a8e27ce0b6830e4b920fcd318335f5c30d6bd1505911`.
 - **Evidence Bundle v1:** [release `bundle-v1`](https://github.com/x39matrix/x39-Evidencia/releases/tag/bundle-v1). The ZIP `x39-bundle-v1.zip` has SHA-256 `2c93b6c74071139f4201cfbd6012cc4391ebe8430cf7b2f7eced34cc7121a0ce`.
 - **Evidence Bundle v1.1:** [release `bundle-v1.1`](https://github.com/x39matrix/x39-Evidencia/releases/tag/bundle-v1.1): both clocks required (Bitcoin anchor and RFC 3161 qualified timestamp) and its own strict verifier, `verify_bundle_v1_1.py`. The commands above refer to v1.
