@@ -35,8 +35,15 @@ export default function Comunicaciones() {
           {section('comms.howT', ['comms.how1', 'comms.how2'])}
           {section('comms.statusT', ['comms.status1'])}
           <p className="nt-note" style={P}>
-            {t('comms.statusMail')}{' '}
-            <a href="mailto:security@x39matrix.org" style={A} data-testid="comms-mail">security@x39matrix.org</a>
+            <a href="https://mining.x39matrix.org/app/fdroid/repo/index.html" target="_blank" rel="noreferrer" style={{ ...A, fontWeight: 600 }} data-testid="comms-mail">
+              F-Droid / APK v1.0.8-x39 (mining.x39matrix.org) →
+            </a>
+            {' · '}
+            <a href="https://mining.x39matrix.org/app/index.html" target="_blank" rel="noreferrer" style={A}>
+              SHA-256 + .ots
+            </a>
+            {' · '}
+            <a href="mailto:security@x39matrix.org" style={A}>security@x39matrix.org</a>
           </p>
           <h2 className="nt-serif" style={H2}>{t('comms.dlT')}</h2>
           <p className="nt-note" style={P}>{conEnlaceApp(t('comms.dl1'))}</p>
