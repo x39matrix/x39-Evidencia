@@ -84,7 +84,7 @@ python3 /path/to/x39-Evidencia/verify_bundle.py 31e1cf09a5b2a74cd978.zip --bitco
 
 This agreement's document is encrypted and not published, so `--content` cannot be supplied and `VALID [0]` is out of reach here; the expected verdict is `VALID CON AVISOS [5]`. Use check A for a `VALID [0]`.
 
-The bundled copy can still be run, but it answers `VALID (OTS omitido)` to `--skip-ots`: an earlier verdict vocabulary, in which skipping the Bitcoin step did not stop the word VALID. The reference verifier refuses to do that, and the refusal is the correct behaviour.
+The historical bundled copy inside `x39-bundle-v1.1.zip` (`1f82d225...`) predates the `--skip-ots` flag (rejecting `--skip-ots` with `unrecognized arguments: --skip-ots`) and only accepts `bundle`, `--content`, and `--bitcoin-node`. Always run the standalone reference verifier (`verify_bundle.py`, `340f9d68...`), which supports `--skip-ots` and refuses to emit `VALID` without Bitcoin header confirmation (returning exit code `3`).
 
 **3. The RFC 3161 qualified timestamp.** The `.cadena.pem` chain ends at the TSA certificate, not at the root. So `-CAfile` must be the ANF root and the chain goes in `-untrusted`. **Validate at the date of the seal, not at today's**: timestamping units expire — the unit that signed this seal is valid until 18 January 2030 — and a seal must stay verifiable long after the unit that issued it is gone.
 
