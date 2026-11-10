@@ -3,7 +3,7 @@
 X-39 Evidencia is a proof-of-existence layer for documents.
 
 > [!WARNING]
-> **Status: test release.** X-39 Evidencia 0.3.5 is a test version, not the final one. It has not been audited by any independent third party; that audit is pending. The verifier has passed internal, reproducible tests. Do not rely on this build for critical use.
+> **Status: test release.** X-39 Evidencia 0.3.6 is a test version, not the final one. It has not been audited by any independent third party; that audit is pending. The verifier has passed internal, reproducible tests. Do not rely on this build for critical use.
 > This applies to the app, not to the evidence it produces: a Bitcoin anchor or an ANF qualified timestamp, once issued, is real and anyone can verify it.
 > Every Android app release publishes its APK SHA-256, signing-certificate fingerprint, qualified timestamp and `.ots` proof, so you can check the evidence yourself instead of trusting this notice.
 
@@ -84,7 +84,7 @@ python3 /path/to/x39-Evidencia/verify_bundle.py 31e1cf09a5b2a74cd978.zip --bitco
 
 This agreement's document is encrypted and not published, so `--content` cannot be supplied and `VALID [0]` is out of reach here; the expected verdict is `VALID CON AVISOS [5]`. Use check A for a `VALID [0]`.
 
-The historical bundled copy inside `x39-bundle-v1.1.zip` (`1f82d225...`) predates the `--skip-ots` flag (rejecting `--skip-ots` with `unrecognized arguments: --skip-ots`) and only accepts `bundle`, `--content`, and `--bitcoin-node`. Always run the standalone reference verifier (`verify_bundle.py`, `340f9d68...`), which supports `--skip-ots` and refuses to emit `VALID` without Bitcoin header confirmation (returning exit code `3`).
+The bundled copy can still be run, but it answers `VALID (OTS omitido)` to `--skip-ots`: an earlier verdict vocabulary, in which skipping the Bitcoin step did not stop the word VALID. The reference verifier refuses to do that (`INVALID[3]`, exit code `3`), and the refusal is the correct behaviour. The copy bundled in `x39-bundle-v1.1.zip` (`1f82d225…`) has no `--skip-ots` option at all: it stops with `unrecognized arguments: --skip-ots`.
 
 **3. The RFC 3161 qualified timestamp.** The `.cadena.pem` chain ends at the TSA certificate, not at the root. So `-CAfile` must be the ANF root and the chain goes in `-untrusted`. **Validate at the date of the seal, not at today's**: timestamping units expire — the unit that signed this seal is valid until 18 January 2030 — and a seal must stay verifiable long after the unit that issued it is gone.
 
@@ -135,7 +135,7 @@ tests that compare the Python verifier with the JavaScript ZIP reference.
 ## Links
 
 - **Web:** <https://x39matrix.org>. Public verifier: <https://x39matrix.org/verificar>.
-- **Android app (X-39 Evidencia 0.3.5, test release, not audited):** [Releases](https://github.com/x39matrix/x39-Evidencia/releases). Each release lists the APK SHA-256, the signing-certificate fingerprint, the qualified timestamp and the `.ots` proof.
+- **Android app (X-39 Evidencia 0.3.6, test release, not audited):** [Releases](https://github.com/x39matrix/x39-Evidencia/releases) · [source code](https://github.com/x39matrix/x39-android). Each release lists the APK SHA-256, the signing-certificate fingerprint, the qualified timestamp and the `.ots` proof.
 - **Demo seal:** [`testdata/bundle_v1_prod.zip`](testdata/bundle_v1_prod.zip), agreement `demo0000demo0001`, SHA-256 `a648c11a00e3420e27e2a8e27ce0b6830e4b920fcd318335f5c30d6bd1505911`. The historical release is [`demo-verificable-1`](https://github.com/x39matrix/x39-Evidencia/releases/tag/demo-verificable-1). Use the reference verifier linked below.
 - **Evidence Bundle v1:** [release `bundle-v1`](https://github.com/x39matrix/x39-Evidencia/releases/tag/bundle-v1). The ZIP `x39-bundle-v1.zip` has SHA-256 `2c93b6c74071139f4201cfbd6012cc4391ebe8430cf7b2f7eced34cc7121a0ce`.
 - **Evidence Bundle v1.1:** [release `bundle-v1.1`](https://github.com/x39matrix/x39-Evidencia/releases/tag/bundle-v1.1): a sealed release from 2026-10-12 pairing both clocks (Bitcoin anchor and RFC 3161 qualified timestamp). It is kept exactly as published; the verifier bundled with it belongs to the same earlier, more lenient line as v1's. Verify any bundle, v1 or v1.1, with the reference verifier of this repository: `verify_bundle.py`. The commands above refer to v1.
