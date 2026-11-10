@@ -57,7 +57,7 @@ export default function AppMovil() {
             <a href={RELEASE} target="_blank" rel="noreferrer" style={A} data-testid="app-github-release">{t('appe.dlLink2')}</a>
           </p>
           <p style={P}>
-            <a href="https://mining.x39matrix.org/app/fdroid/repo/index.html" target="_blank" rel="noreferrer" style={A} data-testid="app-fdroid-link">F-Droid: mining.x39matrix.org/app/fdroid/repo</a>
+            <a href="https://fdroid.x39matrix.org/app/fdroid/repo/index.html" target="_blank" rel="noreferrer" style={A} data-testid="app-fdroid-link">F-Droid: fdroid.x39matrix.org/app/fdroid/repo</a>
           </p>
           <p className="nt-mono" style={MONO} data-testid="app-sha256">APK SHA-256: {APK_SHA256}</p>
           <p className="nt-mono" style={MONO} data-testid="app-size">{APK} · {APK_BYTES}</p>

@@ -35,11 +35,11 @@ export default function Comunicaciones() {
           {section('comms.howT', ['comms.how1', 'comms.how2'])}
           {section('comms.statusT', ['comms.status1'])}
           <p className="nt-note" style={P}>
-            <a href="https://mining.x39matrix.org/app/fdroid/repo/index.html" target="_blank" rel="noreferrer" style={{ ...A, fontWeight: 600 }} data-testid="comms-mail">
-              F-Droid / APK v1.0.8-x39 (mining.x39matrix.org) →
+            <a href="https://fdroid.x39matrix.org/app/fdroid/repo/index.html" target="_blank" rel="noreferrer" style={{ ...A, fontWeight: 600 }} data-testid="comms-mail">
+              F-Droid / APK v1.0.8-x39 (fdroid.x39matrix.org) →
             </a>
             {' · '}
-            <a href="https://mining.x39matrix.org/app/index.html" target="_blank" rel="noreferrer" style={A}>
+            <a href="https://fdroid.x39matrix.org/app/index.html" target="_blank" rel="noreferrer" style={A}>
               SHA-256 + .ots
             </a>
             {' · '}
